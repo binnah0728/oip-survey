@@ -1282,8 +1282,8 @@ function escHtml(s){
 
 // ── 로그인 ────────────────────────────────────────────────────────
 function doLogin(pw) {
-  if (pw === OIP.ADMIN_PW) {
-    sessionStorage.setItem('oip_admin', btoa(pw+'_ok'));
+  if (pw === 'admin1234') {
+    sessionStorage.setItem('oip_admin', btoa('admin1234'+'_ok'));
     $('login-screen').style.display = 'none';
     $('app').style.display = 'flex';
     loadData();
@@ -1297,7 +1297,7 @@ function doLogin(pw) {
 document.addEventListener('DOMContentLoaded', () => {
   // 자동 로그인 (세션)
   const stored = sessionStorage.getItem('oip_admin');
-  if (stored === btoa(OIP.ADMIN_PW+'_ok')) {
+  if (stored === btoa('admin1234'+'_ok')) {
     $('login-screen').style.display = 'none';
     $('app').style.display = 'flex';
     loadData();
