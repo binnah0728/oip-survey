@@ -1109,7 +1109,7 @@ async function doSubmit(){
 
   const payload = {
     sessionId,
-    surveyId : OIP.SURVEY_ID,
+    surveyId : 'CAFETERIA-2026-H1',
     respondedAt: new Date().toISOString(),
     demo    : state.demo,
     answers : state.answers,
@@ -1118,12 +1118,12 @@ async function doSubmit(){
   };
 
   // GAS 전송 or 목업
-  if (OIP.USE_MOCK) {
+  if (false) {
     await new Promise(r=>setTimeout(r,1000));
     console.log('[OIP] 목업 제출:', payload);
   } else {
     try {
-      await fetch(OIP.GAS_URL, {
+      await fetch('https://script.google.com/macros/s/AKfycbzfyi9yjwLsnCYbUIRF9bH98jqL5UR-tgNwCsr5XyVzWIUwTZ5nDysT2IAsA3tNM27e/exec', {
         method: 'POST',
         mode  : 'no-cors',
         headers: { 'Content-Type': 'application/json' },
