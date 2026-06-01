@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>직원식당 고객만족도 조사</title>
+<meta name="theme-color" content="#F5F0E8">
+
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<script src="config.js"></script>
+<style>
+:root {
+  /* ── BetterMe 스타일 + 사조 CI 네이비 ─────── */
+  --cream:       #F5F0E8;
+  --cream-dark:  #EDE7DB;
+  --cream-border:#E2DAD0;
+  --white:       #FFFFFF;
+  --navy:        #141B4D;
+  --navy-mid:    #1E2D6B;
+  --navy-light:  #EEF1F9;
+
+  --text:        #1A1510;
+  --sub:         #4A4238;
+  --muted:       #8C8178;
+  --placeholder: #B5ADA4;
+
+  --success:     #1A6B47;
+  --success-bg:  #E6F4EE;
+  --error:       #B91C1C;
+  --error-bg:    #FEF2F2;
+
+  --font: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+
+  --radius-sm:   8px;
+  --radius-md:   14px;
+  --radius-lg:   18px;
+  --radius-xl:   24px;
+  --radius-full: 999px;
+
+  --shadow-xs: 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+
+  --nav-h: 88px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font);
+  background: var(--cream);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: var(--font); cursor: pointer; border: none; background: none; }
+input, textarea, select { font-family: var(--font); }
+textarea { resize: none; }
+
+/* ── 진행률 바 ── */
+#progress-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: var(--cream);
+  padding: 14px 20px 0;
+  transition: opacity .3s;
+}
+#progress-bar.hidden { opacity: 0; pointer-events: none; }
+.pb-top {
+  max-width: 560px; margin: 0 auto;
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.pb-group { display: flex; align-items: center; gap: 6px; }
+.pb-section-name {
+  font-size: 11px; font-weight: 500; color: var(--muted);
+  letter-spacing: .04em;
+}
+.pb-tag {
+  padding: 2px 7px; background: var(--navy-light);
+  border-radius: 4px; font-size: 10px; font-weight: 700;
+  color: var(--navy);
+}
+.pb-counter {
+  font-size: 12px; font-weight: 600; color: var(--muted);
+}
+.pb-counter span { font-weight: 400; }
+.pb-segments { display: flex; gap: 3px; max-width: 560px; margin: 0 auto; }
+.pb-seg {
+  flex: 1; height: 2px; border-radius: 2px;
+  background: var(--cream-border); transition: background .4s ease;
+}
+.pb-seg.done    { background: var(--navy); }
+.pb-seg.current { background: var(--navy); opacity: .5; }
+
+/* ── 화면 전환 ── */
+.screen { display: none; min-height: 100vh; animation: fadeUp .28s ease both; }
+.screen.active { display: flex; flex-direction: column; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── 인트로 화면 ── */
+#screen-intro {
+  background: var(--cream);
+  align-items: flex-start; justify-content: center;
+  padding: 56px 28px 40px;
+  min-height: 100vh;
+}
+.intro-card { max-width: 480px; width: 100%; }
+.intro-wordmark {
+  font-size: 10px; font-weight: 500; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: 36px; display: block;
+}
+.intro-title {
+  font-size: clamp(28px, 7vw, 38px); font-weight: 700;
+  color: var(--text); line-height: 1.3;
+  margin-bottom: 16px; white-space: pre-line;
+}
+.intro-divider {
+  width: 28px; height: 2px;
+  background: var(--cream-border); margin-bottom: 20px;
+}
+.intro-body {
+  font-size: 15px; color: var(--sub); line-height: 1.8;
+  margin-bottom: 6px; white-space: pre-line;
+}
+.intro-sub {
+  font-size: 13px; color: var(--muted); line-height: 1.7;
+  margin-bottom: 40px; white-space: pre-line;
+}
+.intro-meta {
+  display: flex; gap: 24px; margin-bottom: 40px; flex-wrap: wrap;
+}
+.meta-item { display: flex; flex-direction: column; gap: 3px; }
+.meta-label {
+  font-size: 9px; font-weight: 600; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.meta-value { font-size: 13px; font-weight: 600; color: var(--sub); }
+.btn-start {
+  width: 100%; padding: 18px 24px;
+  background: var(--navy); color: #fff;
+  border-radius: var(--radius-full);
+  font-size: 15px; font-weight: 700; letter-spacing: .04em;
+  transition: all .18s ease;
+}
+.btn-start:hover { background: var(--navy-mid); }
+
+/* ── 설문 화면 ── */
+#screen-survey {
+  background: var(--cream);
+  padding-top: 58px;
+  align-items: flex-start; justify-content: flex-start;
+  padding-bottom: var(--nav-h);
+  min-height: 100vh;
+}
+.question-wrap {
+  max-width: 560px; width: 100%;
+  padding: 28px 24px 0;
+  margin: 0 auto;
+  transition: opacity .22s ease, transform .22s ease;
+}
+.question-wrap.hidden { opacity: 0; transform: translateY(8px); }
+
+/* 카드 없음 — flat 레이아웃 */
+.q-card {
+  background: transparent;
+  border: none; padding: 0;
+  box-shadow: none;
+}
+.q-card.shake { animation: shake .35s ease; }
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60%  { transform: translateX(-5px); }
+  40%,80%  { transform: translateX(5px); }
+}
+
+/* 뱃지 */
+.q-badge {
+  display: none; /* BetterMe에선 뱃지 숨김 */
+}
+.q-badge.demo { display: none; }
+.q-optional { display: none; }
+
+/* 질문 텍스트 */
+.q-text {
+  font-size: clamp(20px, 5.5vw, 26px); font-weight: 700;
+  color: var(--text); line-height: 1.4;
+  margin-bottom: 8px; white-space: pre-line;
+}
+.q-hint {
+  font-size: 14px; color: var(--muted); font-weight: 400;
+  margin-bottom: 28px;
+}
+.auto-hint {
+  text-align: center; font-size: 12px; color: var(--placeholder);
+  margin-top: 16px;
+}
+.error-msg {
+  margin: 10px 24px; padding: 10px 14px;
+  background: var(--error-bg); border: 1px solid #FECACA;
+  border-radius: var(--radius-sm); font-size: 12px;
+  color: var(--error); font-weight: 500; text-align: center;
+  display: none; max-width: 560px; margin-left: auto; margin-right: auto;
+}
+.error-msg.show { display: block; }
+.kb-hint {
+  text-align: center; font-size: 11px; color: var(--placeholder);
+  margin-top: 6px;
+}
+
+/* ── 기본정보 버튼 (BetterMe 카드 스타일) ── */
+.demo-grid { display: grid; gap: 10px; }
+.demo-btn {
+  width: 100%; padding: 18px 20px;
+  background: var(--white); color: var(--text);
+  border: 1.5px solid var(--cream-border);
+  border-radius: var(--radius-md);
+  font-size: 15px; font-weight: 500;
+  text-align: left;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: all .15s ease;
+  box-shadow: var(--shadow-xs);
+}
+.demo-btn:hover { border-color: var(--navy); }
+.demo-btn.sel {
+  border-color: var(--navy); background: var(--navy-light);
+  font-weight: 600;
+}
+.demo-btn.sel::after {
+  content: '';
+  width: 20px; height: 20px; flex-shrink: 0;
+  border-radius: 4px;
+  border: 2px solid var(--navy);
+  background: var(--navy) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 9'%3E%3Cpath stroke='white' stroke-width='1.8' fill='none' d='M1 4l3.5 3.5L11 1'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+.demo-btn:not(.sel)::after {
+  content: '';
+  width: 20px; height: 20px; flex-shrink: 0;
+  border-radius: 4px; border: 1.5px solid var(--cream-border);
+  background: transparent;
+}
+
+/* ── 단일 리스트 (핵심 스타일) ── */
+.single-list { display: flex; flex-direction: column; gap: 10px; }
+.list-btn {
+  width: 100%; padding: 18px 20px;
+  background: var(--white); color: var(--text);
+  border: 1.5px solid var(--cream-border);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: space-between;
+  text-align: left; transition: all .15s ease;
+  box-shadow: var(--shadow-xs);
+}
+.list-btn:hover { border-color: var(--navy); }
+.list-btn.sel {
+  border-color: var(--navy); background: var(--navy-light);
+}
+/* 알파벳 숨기고 우측 체크박스만 */
+.list-alpha { display: none; }
+.list-label {
+  font-size: 15px; font-weight: 500; color: var(--text);
+  flex: 1;
+}
+.list-btn.sel .list-label { font-weight: 600; color: var(--navy); }
+.list-btn::after {
+  content: '';
+  width: 22px; height: 22px; flex-shrink: 0;
+  border-radius: 5px; border: 1.5px solid var(--cream-border);
+  background: transparent; transition: all .15s;
+}
+.list-btn.sel::after {
+  border-color: var(--navy);
+  background: var(--navy) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 9'%3E%3Cpath stroke='white' stroke-width='1.8' fill='none' d='M1 4l3.5 3.5L11 1'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+
+/* ── 아이콘 카드 (세로 리스트로 변환) ── */
+.icon-cards {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.icon-card-btn {
+  width: 100%; padding: 18px 20px;
+  background: var(--white); color: var(--text);
+  border: 1.5px solid var(--cream-border);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: space-between;
+  text-align: left; transition: all .15s ease;
+  box-shadow: var(--shadow-xs);
+  max-width: none; flex: none; min-width: 0;
+}
+.icon-card-btn:hover { border-color: var(--navy); }
+.icon-card-btn.sel {
+  border-color: var(--navy); background: var(--navy-light);
+}
+.icon-card-btn .card-label {
+  font-size: 15px; font-weight: 500; color: var(--text);
+  text-align: left; line-height: 1.4; flex: 1;
+}
+.icon-card-btn.sel .card-label { font-weight: 600; color: var(--navy); }
+.icon-card-btn::after {
+  content: '';
+  width: 22px; height: 22px; flex-shrink: 0;
+  border-radius: 5px; border: 1.5px solid var(--cream-border);
+  background: transparent; transition: all .15s;
+}
+.icon-card-btn.sel::after {
+  border-color: var(--navy);
+  background: var(--navy) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 9'%3E%3Cpath stroke='white' stroke-width='1.8' fill='none' d='M1 4l3.5 3.5L11 1'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+
+/* ── 3버튼 ── */
+.three-btns { display: flex; gap: 10px; }
+.three-btn {
+  flex: 1; padding: 18px 10px;
+  background: var(--white); color: var(--text);
+  border: 1.5px solid var(--cream-border);
+  border-radius: var(--radius-md);
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 0;
+  transition: all .15s ease;
+  box-shadow: var(--shadow-xs); min-height: 68px;
+}
+.three-btn:hover { border-color: var(--navy); }
+.three-btn.sel {
+  border-color: var(--navy); background: var(--navy-light);
+}
+.three-btn .t-label {
+  font-size: 14px; font-weight: 500; color: var(--text);
+}
+.three-btn.sel .t-label { font-weight: 700; color: var(--navy); }
+
+/* ── 리커트 ── */
+.likert-row { display: flex; flex-direction: column; gap: 10px; }
+.likert-btn {
+  width: 100%; padding: 16px 20px;
+  background: var(--white); color: var(--text);
+  border: 1.5px solid var(--cream-border);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: space-between;
+  text-align: left; transition: all .15s ease;
+  box-shadow: var(--shadow-xs);
+  min-width: 0; max-width: none; flex: none;
+}
+.likert-btn:hover { border-color: var(--navy); }
+.likert-score {
+  font-size: 15px; font-weight: 600; color: var(--text);
+  width: 24px; flex-shrink: 0;
+  transition: color .15s;
+}
+.likert-label {
+  font-size: 14px; font-weight: 400; color: var(--sub);
+  flex: 1; margin-left: 12px;
+  white-space: normal; text-align: left; line-height: 1.4;
+  transition: color .15s;
+}
+.likert-btn::after {
+  content: '';
+  width: 22px; height: 22px; flex-shrink: 0;
+  border-radius: 5px; border: 1.5px solid var(--cream-border);
+  background: transparent; transition: all .15s;
+}
+/* 선택 상태 — 네이비 단일색 */
+.likert-btn.sel {
+  border-color: var(--navy); background: var(--navy-light);
+}
+.likert-btn.sel .likert-score { color: var(--navy); font-weight: 700; }
+.likert-btn.sel .likert-label { color: var(--navy); font-weight: 600; }
+.likert-btn.sel::after {
+  border-color: var(--navy);
+  background: var(--navy) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 9'%3E%3Cpath stroke='white' stroke-width='1.8' fill='none' d='M1 4l3.5 3.5L11 1'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+/* data-val별 색상 제거 (통일) */
+.likert-btn[data-val="5"].sel,
+.likert-btn[data-val="4"].sel,
+.likert-btn[data-val="3"].sel,
+.likert-btn[data-val="2"].sel,
+.likert-btn[data-val="1"].sel {
+  background: var(--navy-light); border-color: var(--navy);
+}
+
+/* ── 만족도 Q4 ── */
+.satisfaction-row { display: flex; flex-direction: column; gap: 10px; }
+.sat-btn {
+  width: 100%; padding: 16px 20px;
+  background: var(--white); color: var(--text);
+  border: 1.5px solid var(--cream-border);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: space-between;
+  text-align: left; transition: all .15s ease;
+  box-shadow: var(--shadow-xs); min-width: 0; max-width: none; flex: none;
+}
+.sat-btn:hover { border-color: var(--navy); }
+.sat-score {
+  font-size: 14px; font-weight: 600; color: var(--muted);
+  width: 24px; flex-shrink: 0;
+}
+.sat-label {
+  font-size: 14px; font-weight: 400; color: var(--sub);
+  flex: 1; margin-left: 12px;
+  text-align: left; white-space: normal; line-height: 1.4;
+}
+.sat-btn::after {
+  content: '';
+  width: 22px; height: 22px; flex-shrink: 0;
+  border-radius: 5px; border: 1.5px solid var(--cream-border);
+  background: transparent; transition: all .15s;
+}
+.sat-btn.sel { border-color: var(--navy); background: var(--navy-light); }
+.sat-btn.sel .sat-score { color: var(--navy); font-weight: 700; }
+.sat-btn.sel .sat-label { color: var(--navy); font-weight: 600; }
+.sat-btn.sel::after {
+  border-color: var(--navy);
+  background: var(--navy) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 9'%3E%3Cpath stroke='white' stroke-width='1.8' fill='none' d='M1 4l3.5 3.5L11 1'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+.sat-btn[data-val="매우 만족"].sel,
+.sat-btn[data-val="만족"].sel,
+.sat-btn[data-val="보통"].sel,
+.sat-btn[data-val="불만족"].sel,
+.sat-btn[data-val="매우 불만족"].sel {
+  background: var(--navy-light); border-color: var(--navy);
+}
+
+/* ── 칩 단일선택 ── */
+.chip-grid { display: flex; flex-direction: column; gap: 10px; }
+.chip-btn {
+  width: 100%; padding: 16px 20px;
+  background: var(--white); color: var(--text);
+  border: 1.5px solid var(--cream-border);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: space-between;
+  text-align: left; transition: all .15s ease;
+  box-shadow: var(--shadow-xs);
+  font-size: 14px; font-weight: 500;
+  border-radius: var(--radius-md);
+}
+.chip-btn:hover { border-color: var(--navy); }
+.chip-btn.sel {
+  border-color: var(--navy); background: var(--navy-light);
+  color: var(--navy); font-weight: 600;
+}
+.chip-btn::after {
+  content: '';
+  width: 22px; height: 22px; flex-shrink: 0;
+  border-radius: 5px; border: 1.5px solid var(--cream-border);
+  background: transparent; transition: all .15s;
+}
+.chip-btn.sel::after {
+  border-color: var(--navy);
+  background: var(--navy) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 9'%3E%3Cpath stroke='white' stroke-width='1.8' fill='none' d='M1 4l3.5 3.5L11 1'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+
+/* ── 주관식 ── */
+.textarea-wrap { width: 100%; }
+.survey-textarea {
+  width: 100%; padding: 16px 18px;
+  background: var(--white);
+  border: 1.5px solid var(--cream-border);
+  border-radius: var(--radius-md);
+  font-size: 15px; color: var(--text); line-height: 1.7; outline: none;
+  transition: border-color .15s; box-shadow: var(--shadow-xs);
+}
+.survey-textarea::placeholder { color: var(--placeholder); }
+.survey-textarea:focus { border-color: var(--navy); }
+.char-row {
+  display: flex; justify-content: flex-end;
+  margin-top: 6px; font-size: 11px; color: var(--placeholder);
+}
+
+/* ── 경품 화면 ── */
+.prize-info-box {
+  background: var(--white); border: 1.5px solid var(--cream-border);
+  border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 12px;
+  box-shadow: var(--shadow-xs);
+}
+.prize-info-text { font-size: 14px; color: var(--sub); line-height: 1.8; }
+.prize-info-text strong { color: var(--navy); font-weight: 700; }
+.privacy-box {
+  background: var(--cream-dark); border: 1px solid var(--cream-border);
+  border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 14px;
+}
+.privacy-title {
+  font-size: 10px; font-weight: 700; color: var(--muted);
+  margin-bottom: 8px; letter-spacing: .08em; text-transform: uppercase;
+}
+.privacy-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.privacy-table td { padding: 3px 0; vertical-align: top; color: var(--sub); line-height: 1.6; }
+.privacy-table td:first-child {
+  color: var(--muted); white-space: nowrap; padding-right: 10px;
+  font-size: 11px; font-weight: 600; padding-top: 4px;
+}
+.consent-label { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.consent-sub {
+  font-size: 12px; color: var(--muted); font-weight: 400;
+  display: block; margin-top: 3px; margin-bottom: 12px; line-height: 1.6;
+}
+.consent-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.consent-btn {
+  width: 100%; padding: 16px 20px;
+  background: var(--white); border: 1.5px solid var(--cream-border);
+  border-radius: var(--radius-md); font-size: 14px; font-weight: 500;
+  color: var(--sub); text-align: left; transition: all .15s;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: var(--shadow-xs);
+}
+.consent-btn::after {
+  content: '';
+  width: 22px; height: 22px; flex-shrink: 0;
+  border-radius: 50%; border: 1.5px solid var(--cream-border);
+  background: transparent; transition: all .15s;
+}
+.consent-btn.agree.sel {
+  border-color: var(--navy); background: var(--navy-light);
+  color: var(--navy); font-weight: 600;
+}
+.consent-btn.agree.sel::after {
+  border-color: var(--navy);
+  background: var(--navy) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 9'%3E%3Cpath stroke='white' stroke-width='1.8' fill='none' d='M1 4l3.5 3.5L11 1'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+.consent-btn.disagree.sel {
+  border-color: var(--cream-border); background: var(--cream-dark); color: var(--muted);
+}
+.consent-btn.disagree.sel::after {
+  border-color: var(--muted); background: var(--muted) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 9'%3E%3Cpath stroke='white' stroke-width='1.8' fill='none' d='M1 4l3.5 3.5L11 1'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+.phone-label {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  margin-bottom: 8px; letter-spacing: .08em; text-transform: uppercase;
+}
+.phone-input {
+  width: 100%; padding: 16px 18px;
+  border: 1.5px solid var(--cream-border); border-radius: var(--radius-md);
+  font-size: 16px; color: var(--text); background: var(--white);
+  outline: none; letter-spacing: .06em; transition: border-color .15s;
+  box-shadow: var(--shadow-xs);
+}
+.phone-input:focus { border-color: var(--navy); }
+.phone-input::placeholder { color: var(--placeholder); letter-spacing: .03em; }
+.phone-sub { font-size: 11px; color: var(--placeholder); margin-top: 6px; line-height: 1.5; }
+.prize-pending { text-align: center; font-size: 12px; color: var(--placeholder); margin-top: 8px; }
+
+/* ── 하단 네비게이션 ── */
+#nav-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: var(--cream);
+  padding: 12px 24px 32px;
+  display: none;
+}
+.nav-inner {
+  max-width: 560px; margin: 0 auto;
+  display: flex; gap: 10px; align-items: center;
+}
+.btn-prev {
+  width: 52px; height: 54px; border-radius: var(--radius-full);
+  border: 1.5px solid var(--cream-border); background: var(--white);
+  font-size: 18px; color: var(--muted); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s; box-shadow: var(--shadow-xs);
+}
+.btn-prev:hover:not(:disabled) { border-color: var(--navy); color: var(--navy); }
+.btn-prev:disabled { opacity: .4; cursor: default; }
+.btn-next {
+  flex: 1; height: 54px; border-radius: var(--radius-full);
+  background: var(--navy); color: #fff;
+  font-size: 15px; font-weight: 700; letter-spacing: .03em;
+  transition: all .18s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-next:hover:not(:disabled) { background: var(--navy-mid); }
+.btn-next:disabled {
+  background: #C5BDB5;
+  cursor: default;
+}
+.btn-placeholder {
+  flex: 1; height: 54px; border-radius: var(--radius-full);
+  background: #C5BDB5;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: #fff; font-weight: 600; letter-spacing: .03em;
+}
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── 완료 화면 ── */
+#screen-complete {
+  background: var(--cream);
+  align-items: center; justify-content: center;
+  padding: 48px 28px; min-height: 100vh;
+}
+.complete-card {
+  max-width: 440px; width: 100%;
+  background: transparent; text-align: left;
+}
+.complete-mark {
+  width: 52px; height: 52px;
+  background: var(--navy);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 24px;
+  animation: popIn .5s cubic-bezier(.34,1.56,.64,1) .1s both;
+}
+.complete-mark svg { width: 22px; height: 22px; stroke: #fff; }
+@keyframes popIn {
+  from { transform: scale(.5); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
+}
+.complete-title {
+  font-size: 28px; font-weight: 700; color: var(--text);
+  margin-bottom: 12px; line-height: 1.3;
+}
+.complete-body {
+  font-size: 15px; color: var(--sub); line-height: 1.8; margin-bottom: 32px;
+}
+.complete-divider {
+  width: 28px; height: 2px; background: var(--cream-border); margin-bottom: 28px;
+}
+.result-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 10px; margin-bottom: 28px;
+}
+.result-item {
+  background: var(--white); border: 1px solid var(--cream-border);
+  border-radius: var(--radius-md); padding: 14px 12px;
+  box-shadow: var(--shadow-xs);
+}
+.result-value { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 5px; }
+.result-label { font-size: 10px; color: var(--placeholder); font-weight: 500; letter-spacing: .04em; }
+.prize-result-ok {
+  background: var(--success-bg); border: 1px solid #A7F3D0;
+  border-radius: var(--radius-sm); padding: 12px 16px;
+  font-size: 12px; color: var(--success); margin-bottom: 16px; line-height: 1.7;
+}
+.prize-result-no {
+  background: var(--white); border: 1px solid var(--cream-border);
+  border-radius: var(--radius-sm); padding: 12px 16px;
+  font-size: 12px; color: var(--placeholder); margin-bottom: 16px;
+}
+.complete-foot {
+  font-size: 12px; color: var(--placeholder); line-height: 1.7; margin-bottom: 24px;
+}
+.btn-restart {
+  padding: 14px 28px; border: 1.5px solid var(--cream-border);
+  border-radius: var(--radius-full); font-size: 13px; color: var(--sub);
+  font-weight: 600; transition: all .15s; background: var(--white);
+}
+.btn-restart:hover { border-color: var(--navy); color: var(--navy); }
+
+/* ── 반응형 ── */
+@media (max-width: 480px) {
+  .intro-card { padding: 0; }
+  .question-wrap { padding: 24px 20px 0; }
+  .q-text { font-size: 20px; }
+  #nav-bar { padding: 12px 20px 28px; }
+}
+</style>
+</head>
+<body>
+
+<script>
+// ╔══════════════════════════════════════════════════╗
+// ║    ✏️  문구 수정 구역 — 여기서 텍스트를 변경하세요   ║
+// ╚══════════════════════════════════════════════════╝
+const SURVEY_CONFIG = {
+  intro: {
+    wordmark: "Foodist · Customer Satisfaction Survey",
+    title:    "직원식당\n고객만족도 조사",
+    body:     "안녕하십니까?\n푸디스트 고객만족도조사를 실시하고 있습니다.\n고객님의 의견은 향후 식당 운영에\n유용한 자료로 사용됩니다.",
+    sub:      "바쁘시더라도 잠시 시간을 내시어\n설문에 참여해 주시면 감사하겠습니다.",
+    meta: [
+      { label: "소요 시간",  value: "약 5~7분" },
+      { label: "설문 문항",  value: "총 11문항" },
+      { label: "경품 추첨",  value: "참여 가능" },
+    ],
+    startBtn: "설문 시작",
+  },
+  complete: {
+    title: "설문이 완료되었습니다",
+    body:  "소중한 의견을 남겨 주셔서 감사합니다.\n더 나은 직원식당을 만드는 데\n소중히 활용하겠습니다.",
+    foot:  "설문에 참여해 주셔서 감사합니다",
+    restart: "처음으로",
+  },
+  prize: {
+    giftText:    "본 설문조사에 참여하신 분 중 <strong>추첨을 통해</strong> 소정의 상품을 드립니다.",
+    privacyRows: [
+      ["수집하는 자",  "사조푸디스트"],
+      ["수집 목적",    "만족도 조사 참여자 경품 발송"],
+      ["수집 항목",    "휴대폰 번호"],
+      ["보유 기간",    "경품 발송 후 즉시 폐기"],
+    ],
+    consentQ:    "위 개인정보 수집에 동의하십니까?",
+    consentSub:  "동의하지 않을 경우 경품 발송 대상에서 제외됩니다",
+    agreeBtn:    "예, 동의합니다",
+    disagreeBtn: "아니요, 동의하지 않습니다",
+    phoneLabel:  "경품 발송 연락처",
+    phonePlaceholder: "010 - 0000 - 0000",
+    phoneSub:    "연락처는 경품 발송 외 목적으로 사용되지 않습니다",
+    pendingMsg:  "위에서 동의 여부를 선택해 주세요",
+  },
+  nextBtn:   "다음",
+  submitBtn: "제출하기",
+};
+
+// ╔══════════════════════════════════════════════════╗
+// ║    ✏️  설문 문항 — 여기서 질문/선택지를 편집하세요   ║
+// ╚══════════════════════════════════════════════════╝
+const SCREENS = [
+  // 기본 정보
+  { id:"GENDER", type:"demo", group:"기본 정보",
+    question:"성별을 선택해 주세요", field:"gender", cols:2,
+    options:["남성","여성"], required:true },
+  { id:"AGE", type:"demo", group:"기본 정보",
+    question:"연령대를 선택해 주세요", field:"age", cols:2,
+    options:["20대","30대","40대","50대 이상"], required:true },
+  { id:"DEPT", type:"demo", group:"기본 정보",
+    question:"소속을 선택해 주세요", field:"dept", cols:2,
+    options:["AAA팀","BBB팀","CCC팀","외부인"], required:true },
+
+  // Q1 이용 빈도
+  { id:"Q1", type:"single-list", group:"이용 현황", qNum:"1",
+    question:"직원식당에서 중식 기준으로\n주 평균 몇 번의 식사를 하십니까?",
+    options:["5회 이상","4회","3회","2회","1회","거의 이용하지 않음"],
+    required:true },
+
+  // Q2 주 이용 끼니
+  { id:"Q2", type:"icon-card", group:"이용 현황", qNum:"2",
+    question:"최근 1개월 동안\n가장 많이 이용한 끼니는 무엇인가요?",
+    options:["아침식사","점심식사","저녁식사","야식"],
+    required:true },
+
+  // Q3 음식 평가
+  { id:"Q3A", type:"likert", group:"음식 평가", qNum:"3-①", tag:"음식",
+    question:"음식의 간이 알맞다", required:true },
+  { id:"Q3B", type:"likert", group:"음식 평가", qNum:"3-②", tag:"음식",
+    question:"제공되는 음식의 양이 적절하다", required:true },
+  { id:"Q3C", type:"likert", group:"음식 평가", qNum:"3-③", tag:"음식",
+    question:"음식의 온도가 알맞다\n(찬 것은 차게, 따뜻한 것은 따뜻하게)", required:true },
+  { id:"Q3D", type:"likert", group:"음식 평가", qNum:"3-④", tag:"음식",
+    question:"균형적인 영양을 고려한 음식이 제공된다", required:true },
+  { id:"Q3E", type:"likert", group:"음식 평가", qNum:"3-⑤", tag:"음식",
+    question:"제공되는 음식이 서로 잘 조화된다", required:true },
+  { id:"Q3F", type:"likert", group:"음식 평가", qNum:"3-⑥", tag:"음식",
+    question:"음식이 위생적으로 관리된다\n(이물질 등)", required:true },
+  { id:"Q3G", type:"likert", group:"음식 평가", qNum:"3-⑦", tag:"음식",
+    question:"메인 메뉴(주찬)의 반복 주기가 적절하다", required:true },
+  { id:"Q3H", type:"likert", group:"음식 평가", qNum:"3-⑧", tag:"음식",
+    question:"음식의 품질은 일관되게 제공된다", required:true },
+  { id:"Q3I", type:"likert", group:"음식 평가", qNum:"3-⑨", tag:"음식",
+    question:"특식 제공 주기는 적절하게 운영된다", required:true },
+
+  // Q3 서비스 평가
+  { id:"Q3J", type:"likert", group:"서비스 평가", qNum:"3-⑩", tag:"서비스",
+    question:"직원의 인적 서비스(어투, 응대 태도)는 우수하다", required:true },
+  { id:"Q3K", type:"likert", group:"서비스 평가", qNum:"3-⑪", tag:"서비스",
+    question:"직원은 유니폼 착용과 위생 상태가 우수하다", required:true },
+  { id:"Q3L", type:"likert", group:"서비스 평가", qNum:"3-⑫", tag:"서비스",
+    question:"부족한 음식 보충 등 배식이 원활하다", required:true },
+  { id:"Q3M", type:"likert", group:"서비스 평가", qNum:"3-⑬", tag:"서비스",
+    question:"식사 대기 시간이 적절하다", required:true },
+  { id:"Q3N", type:"likert", group:"서비스 평가", qNum:"3-⑭", tag:"서비스",
+    question:"식기 반납 시 대기 시간이 적절하다", required:true },
+  { id:"Q3O", type:"likert", group:"서비스 평가", qNum:"3-⑮", tag:"서비스",
+    question:"메뉴 정보가 정확하고 적시에 제공된다", required:true },
+  { id:"Q3P", type:"likert", group:"서비스 평가", qNum:"3-⑯", tag:"서비스",
+    question:"음식 품질과 서비스를 고려할 때\n가격이 적절하다", required:true },
+
+  // Q3 환경 평가
+  { id:"Q3Q", type:"likert", group:"환경 평가", qNum:"3-⑰", tag:"환경",
+    question:"식당의 식기(수저, 컵) 등이 깨끗하다", required:true },
+  { id:"Q3R", type:"likert", group:"환경 평가", qNum:"3-⑱", tag:"환경",
+    question:"식당의 시설(테이블, 바닥 등) 상태는 청결하다", required:true },
+
+  // Q4 종합 만족도
+  { id:"Q4", type:"satisfaction", group:"종합 만족도", qNum:"4",
+    question:"음식, 서비스, 환경을 종합적으로 고려할 때\n현재 이용하는 직원식당에 대해\n얼마나 만족하십니까?",
+    options:["매우 만족","만족","보통","불만족","매우 불만족"],
+    scores:[5,4,3,2,1],
+    required:true },
+
+  // Q5A 밥 상태
+  { id:"Q5A", type:"three-btn", group:"세부 의견", qNum:"5-①",
+    question:"밥 상태는 어떻습니까?",
+    options:["질다","적당하다","되다"], required:true },
+
+  // Q5B 김치 숙성도
+  { id:"Q5B", type:"three-btn", group:"세부 의견", qNum:"5-②",
+    question:"김치 숙성도(배추김치 기준)는 어떻습니까?",
+    options:["많이 익음","적당하다","덜 익음"], required:true },
+
+  // Q6 중요 항목
+  { id:"Q6", type:"chip", group:"중요도 평가", qNum:"6",
+    question:"직원식당 평가 시\n가장 중요하게 생각하는 부분을\n1가지만 선택해 주세요 (3번 문항 연계)",
+    options:["음식의 간","음식의 양","음식의 온도","영양균형","음식 조화","음식 위생",
+             "메뉴 반복 주기","음식 품질 일관성","특식 제공 주기","인적 서비스",
+             "복장/위생","배식 원활성","식사 대기시간","반납 대기시간","메뉴정보",
+             "서비스 대비 가격","식기류 청결","내부 시설 청결"],
+    required:true, autoAdvance:false },
+
+  // Q7 개선 영역
+  { id:"Q7", type:"icon-card", group:"개선 의견", qNum:"7",
+    question:"직원식당 평가 시\n개선이 필요한 부분을 1가지만 선택해 주세요",
+    options:["맛 (맛있는 음식)","메뉴 (다양성)","위생 (식재료·청결)",
+             "서비스 (직원 응대)","이용 편의성 (대기시간)","개선 필요 없음"],
+    required:true },
+
+  // Q8 개선 음식
+  { id:"Q8", type:"chip", group:"음식 개선", qNum:"8",
+    question:"제공되는 음식 중\n맛이나 품질 개선이 가장 필요한 것을\n1가지만 선택해 주세요",
+    options:["밥","탕/국/찌개","구이/전/튀김","볶음/찜/조림",
+             "무침/샐러드","면류","김치","후식","개선 필요 없음"],
+    required:true, autoAdvance:false },
+
+  // Q9 개선 이유
+  { id:"Q9", type:"icon-card", group:"음식 개선", qNum:"9",
+    question:"위에서 선택한 음식의 개선이 필요한\n이유를 1가지만 선택해 주세요 (8번 연계)",
+    options:["음식의 간","음식의 온도","음식의 양","음식의 다양성","기타"],
+    required:true },
+
+  // Q10 테이크아웃
+  { id:"Q10", type:"textarea", group:"추가 의견", qNum:"10",
+    question:"이용 중이신 테이크아웃 제품에 대해\n개선해야 하거나 바라는 점을\n구체적으로 적어 주세요",
+    placeholder:"예) 샌드위치 종류를 늘려주세요, 가격이 더 저렴했으면 합니다...",
+    required:false, autoAdvance:false },
+
+  // Q11 전반 의견
+  { id:"Q11", type:"textarea", group:"추가 의견", qNum:"11",
+    question:"평소 직원식당을 이용하시면서\n개선이 필요하다고 생각하셨던 점을\n구체적으로 적어 주세요",
+    placeholder:"자유롭게 작성해 주세요. 어떤 의견이든 환영합니다.",
+    required:false, autoAdvance:false },
+
+  // 경품
+  { id:"PRIZE", type:"prize", group:"경품 참여",
+    question:"경품 추첨 참여 안내",
+    required:false, autoAdvance:false },
+];
+// ╚══════════════════ 설정 끝 ══════════════════╝
+
+// ── 엔진 ─────────────────────────────────────
+const TOTAL = SCREENS.length;
+const AUTO_TYPES = new Set(["demo","single-list","icon-card","three-btn","likert","satisfaction"]);
+
+const LIKERT_LABELS = ["매우\n그렇다","그런\n편이다","보통","그렇지\n않은 편이다","전혀\n그렇지 않다"];
+const SAT_SCORES    = [5,4,3,2,1];
+
+const state = {
+  idx:0, answers:{}, demo:{},
+  prize:{agreedSet:false,agreed:false,phone:""},
+  submitting:false,
+};
+
+const $intro    = ()=>document.getElementById("screen-intro");
+const $survey   = ()=>document.getElementById("screen-survey");
+const $complete = ()=>document.getElementById("screen-complete");
+const $pb       = ()=>document.getElementById("progress-bar");
+const $nav      = ()=>document.getElementById("nav-bar");
+const $qWrap    = ()=>document.getElementById("question-wrap");
+const $errMsg   = ()=>document.getElementById("error-msg");
+const $kbHint   = ()=>document.getElementById("kb-hint");
+const $btnPrev  = ()=>document.getElementById("btn-prev");
+const $btnNext  = ()=>document.getElementById("btn-next");
+const $btnPH    = ()=>document.getElementById("btn-placeholder");
+
+function esc(s){
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function getVal(sc){
+  if(sc.type==="demo")  return state.demo[sc.field];
+  if(sc.type==="prize") return state.prize.agreedSet?"set":undefined;
+  return state.answers[sc.id];
+}
+
+function isAnswered(sc){
+  if(sc.required===false) return true;
+  if(sc.type==="demo")    return !!state.demo[sc.field];
+  if(sc.type==="prize")   return state.prize.agreedSet;
+  const v=state.answers[sc.id];
+  return v!==undefined&&v!==null&&v!=="";
+}
+
+function updatePB(){
+  const sc=SCREENS[state.idx];
+  document.getElementById("pb-section-name").textContent=sc.group||"";
+  const tagEl=document.getElementById("pb-tag");
+  if(sc.tag){tagEl.textContent=sc.tag;tagEl.style.display="inline-flex";}
+  else tagEl.style.display="none";
+  document.getElementById("pb-counter").innerHTML=
+    `${state.idx+1}<span> / ${TOTAL}</span>`;
+  const segs=document.getElementById("pb-segments");
+  segs.innerHTML=SCREENS.map((_,i)=>{
+    let c="pb-seg";
+    if(i<state.idx)c+=" done";
+    if(i===state.idx)c+=" current";
+    return`<div class="${c}"></div>`;
+  }).join("");
+}
+
+function buildQ(){
+  const sc=SCREENS[state.idx];
+  const val=getVal(sc);
+  const badgeHTML=sc.qNum
+    ?`<div class="q-badge">Q ${sc.qNum}${sc.required===false?'<span class="q-optional">선택 사항</span>':""}</div>`
+    :`<div class="q-badge demo">${sc.group}</div>`;
+  let inp="";
+  if(sc.type==="demo"){
+    const cols=sc.cols||2;
+    inp=`<div class="demo-grid" style="grid-template-columns:repeat(${cols},1fr)">
+      ${sc.options.map(o=>`<button class="demo-btn${val===o?" sel":""}" data-val="${esc(o)}">${esc(o)}</button>`).join("")}
+    </div>`;
+  } else if(sc.type==="single-list"){
+    inp=`<div class="single-list">
+      ${sc.options.map((o,i)=>`<button class="list-btn${val===o?" sel":""}" data-val="${esc(o)}">
+        <div class="list-alpha">${val===o?"✓":String.fromCharCode(65+i)}</div>
+        <span class="list-label">${esc(o)}</span>
+      </button>`).join("")}
+    </div>`;
+  } else if(sc.type==="icon-card"){
+    inp=`<div class="icon-cards">
+      ${sc.options.map(o=>`<button class="icon-card-btn${val===o?" sel":""}" data-val="${esc(o)}">
+        <span class="card-label">${esc(o)}</span>
+      </button>`).join("")}
+    </div>`;
+  } else if(sc.type==="three-btn"){
+    inp=`<div class="three-btns">
+      ${sc.options.map(o=>`<button class="three-btn${val===o?" sel":""}" data-val="${esc(o)}">
+        <span class="t-label">${esc(o)}</span>
+      </button>`).join("")}
+    </div>`;
+  } else if(sc.type==="likert"){
+    inp=`<p class="q-hint" style="margin-bottom:20px">해당하는 항목을 선택하세요</p><div class="likert-row">
+      ${[5,4,3,2,1].map((s,i)=>`<button class="likert-btn${val===s?" sel":""}" data-val="${s}">
+        <span class="likert-score">${s}</span>
+        <span class="likert-label">${LIKERT_LABELS[i]}</span>
+      </button>`).join("")}
+    </div>
+`;
+  } else if(sc.type==="satisfaction"){
+    inp=`<p class="q-hint" style="margin-bottom:20px">해당하는 항목을 선택하세요</p><div class="satisfaction-row">
+      ${sc.options.map((o,i)=>`<button class="sat-btn${val===o?" sel":""}" data-val="${esc(o)}">
+        <span class="sat-score">${sc.scores?sc.scores[i]:5-i}</span>
+        <span class="sat-label">${esc(o)}</span>
+      </button>`).join("")}
+    </div>`;
+  } else if(sc.type==="chip"){
+    inp=`<p class="q-hint" style="margin-bottom:20px">해당하는 항목을 선택하세요</p><div class="chip-grid">
+      ${sc.options.map(o=>`<button class="chip-btn${val===o?" sel":""}" data-val="${esc(o)}">${esc(o)}</button>`).join("")}
+    </div>`;
+  } else if(sc.type==="textarea"){
+    inp=`<div class="textarea-wrap">
+      <textarea class="survey-textarea" id="ta-${sc.id}" rows="5"
+        placeholder="${esc(sc.placeholder||"")}" maxlength="500">${esc(val||"")}</textarea>
+      <div class="char-row"><span>선택 사항</span><span id="cc-${sc.id}">${(val||"").length}/500</span></div>
+    </div>`;
+  } else if(sc.type==="prize"){
+    const p=SURVEY_CONFIG.prize,pr=state.prize;
+    const rows=p.privacyRows.map(([k,v])=>`<tr><td>${esc(k)}</td><td>: ${esc(v)}</td></tr>`).join("");
+    inp=`
+      <div class="prize-info-box"><p class="prize-info-text">${p.giftText}</p></div>
+      <div class="privacy-box">
+        <p class="privacy-title">개인정보 수집·이용 안내</p>
+        <table class="privacy-table"><tbody>${rows}</tbody></table>
+      </div>
+      <p class="consent-label">${p.consentQ}<span class="consent-sub">${p.consentSub}</span></p>
+      <div class="consent-grid">
+        <button class="consent-btn agree${pr.agreedSet&&pr.agreed?" sel":""}" id="consent-agree">${p.agreeBtn}</button>
+        <button class="consent-btn disagree${pr.agreedSet&&!pr.agreed?" sel":""}" id="consent-disagree">${p.disagreeBtn}</button>
+      </div>
+      <div id="phone-section" style="overflow:hidden;transition:max-height .35s ease,opacity .35s ease;max-height:${pr.agreed?'200px':'0'};opacity:${pr.agreed?'1':'0'};">
+        <p class="phone-label" style="margin-top:18px;">${p.phoneLabel}</p>
+        <input class="phone-input" type="tel" id="prize-phone"
+          value="${esc(pr.phone)}" placeholder="${p.phonePlaceholder}" maxlength="13">
+        <p class="phone-sub">${p.phoneSub}</p>
+      </div>
+      ${!pr.agreedSet?`<p class="prize-pending" id="prize-pending">${p.pendingMsg}</p>`:""}`;
+  }
+
+  const autoAdv=AUTO_TYPES.has(sc.type)&&sc.autoAdvance!==false;
+  const hint=autoAdv&&!val?`<p class="auto-hint">선택하면 자동으로 다음으로 이동합니다</p>`:"";
+  $qWrap().innerHTML=`<div class="q-card" id="q-card">${badgeHTML}<h2 class="q-text">${sc.question}</h2>${sc.hint?`<p class="q-hint">${sc.hint}</p>`:""}${inp}${hint}</div>`;
+}
+
+function bindEvents(){
+  const sc=SCREENS[state.idx];
+  const autoAdv=AUTO_TYPES.has(sc.type)&&sc.autoAdvance!==false;
+  $qWrap().querySelectorAll("[data-val]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const val=btn.dataset.val;
+      const numVal=(sc.type==="likert")?parseInt(val):val;
+      if(sc.type==="demo") state.demo[sc.field]=numVal;
+      else state.answers[sc.id]=numVal;
+      $qWrap().querySelectorAll("[data-val]").forEach(b=>b.classList.remove("sel"));
+      btn.classList.add("sel");
+      updateNav();
+      if(autoAdv) setTimeout(goNext,360);
+    });
+  });
+  const ta=document.getElementById(`ta-${sc.id}`);
+  if(ta){
+    ta.addEventListener("input",()=>{
+      state.answers[sc.id]=ta.value;
+      const cc=document.getElementById(`cc-${sc.id}`);
+      if(cc)cc.textContent=`${ta.value.length}/500`;
+      updateNav();
+    });
+    setTimeout(()=>ta.focus(),50);
+  }
+  const ag=document.getElementById("consent-agree");
+  const dg=document.getElementById("consent-disagree");
+  if(ag){ag.addEventListener("click",()=>{
+    state.prize={...state.prize,agreed:true,agreedSet:true};
+    ag.classList.add("sel");
+    const dgBtn=document.getElementById("consent-disagree");
+    if(dgBtn)dgBtn.classList.remove("sel");
+    const pending=document.getElementById("prize-pending");
+    if(pending)pending.style.display="none";
+    const ps=document.getElementById("phone-section");
+    if(ps){ps.style.maxHeight="200px";ps.style.opacity="1";}
+    updateNav();
+    setTimeout(()=>{const ph=document.getElementById("prize-phone");if(ph)ph.focus();},350);
+  });}
+  if(dg){dg.addEventListener("click",()=>{
+    state.prize={...state.prize,agreed:false,agreedSet:true};
+    dg.classList.add("sel");
+    const agBtn=document.getElementById("consent-agree");
+    if(agBtn)agBtn.classList.remove("sel");
+    const pending=document.getElementById("prize-pending");
+    if(pending)pending.style.display="none";
+    const ps=document.getElementById("phone-section");
+    if(ps){ps.style.maxHeight="0";ps.style.opacity="0";}
+    updateNav();
+  });}
+  const ph=document.getElementById("prize-phone");
+  if(ph){ph.addEventListener("input",()=>{state.prize.phone=ph.value;});setTimeout(()=>{if(state.prize.agreed)ph.focus();},50);}
+}
+
+function updateNav(){
+  const sc=SCREENS[state.idx];
+  const ans=isAnswered(sc);
+  const autoAdv=AUTO_TYPES.has(sc.type)&&sc.autoAdvance!==false;
+  const isLast=state.idx===TOTAL-1;
+  $btnPrev().disabled=state.idx===0;
+  if(autoAdv&&!ans){
+    $btnNext().style.display="none";$btnPH().style.display="flex";
+  } else {
+    $btnNext().style.display="flex";$btnPH().style.display="none";
+    $btnNext().disabled=false;
+    $btnNext().innerHTML=state.submitting
+      ?`<div class="spinner"></div> 처리 중`
+      :isLast?SURVEY_CONFIG.submitBtn:SURVEY_CONFIG.nextBtn;
+  }
+  if(!autoAdv&&ans&&sc.type!=="prize"){
+    $kbHint().textContent="Enter 또는 → 키로 다음으로 이동";
+    $kbHint().style.display="block";
+  } else $kbHint().style.display="none";
+}
+
+function renderQ(){
+  buildQ();
+  $qWrap().classList.remove("hidden");
+  bindEvents();updatePB();updateNav();
+  $errMsg().classList.remove("show");
+}
+
+function transition(toIdx){
+  $qWrap().classList.add("hidden");
+  setTimeout(()=>{state.idx=toIdx;renderQ();},220);
+}
+
+function goNext(){
+  const sc=SCREENS[state.idx];
+  if(!isAnswered(sc)){
+    $errMsg().classList.add("show");
+    const c=document.getElementById("q-card");
+    if(c){c.classList.remove("shake");void c.offsetWidth;c.classList.add("shake");}
+    return;
+  }
+  $errMsg().classList.remove("show");
+  if(state.idx<TOTAL-1)transition(state.idx+1);
+  else doSubmit();
+}
+function goPrev(){if(state.idx>0)transition(state.idx-1);}
+
+async function doSubmit(){
+  state.submitting=true; updateNav();
+
+  // 중복 제출 체크 (LocalStorage)
+  const DUP_KEY = 'oip_submitted_' + OIP.SURVEY_ID;
+  const blockHours = OIP.DUPLICATE_BLOCK_HOURS || 0;
+  if (blockHours > 0) {
+    const ts = localStorage.getItem(DUP_KEY);
+    if (ts && (Date.now()-parseInt(ts)) < blockHours*3600000) {
+      state.submitting=false; updateNav();
+      alert('이미 응답하셨습니다. 감사합니다.');
+      return;
+    }
+  }
+
+  // 세션 ID 생성
+  const sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+  // 점수 계산
+  const likertIds = SCREENS.filter(s=>s.type==='likert').map(s=>s.id);
+  const scores = likertIds.map(id=>parseFloat(state.answers[id])).filter(v=>!isNaN(v));
+  const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(2) : null;
+
+  const payload = {
+    sessionId,
+    surveyId : OIP.SURVEY_ID,
+    respondedAt: new Date().toISOString(),
+    demo    : state.demo,
+    answers : state.answers,
+    prize   : state.prize,
+    scores  : { avg },
+  };
+
+  // GAS 전송 or 목업
+  if (OIP.USE_MOCK) {
+    await new Promise(r=>setTimeout(r,1000));
+    console.log('[OIP] 목업 제출:', payload);
+  } else {
+    try {
+      await fetch(OIP.GAS_URL, {
+        method: 'POST',
+        mode  : 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body  : JSON.stringify(payload),
+      });
+    } catch(e) {
+      console.warn('[OIP] 제출 오류 (no-cors 정상):', e.message);
+    }
+  }
+
+  // 중복 방지 마킹
+  if (blockHours > 0) localStorage.setItem(DUP_KEY, Date.now().toString());
+
+  state.submitting=false;
+  showComplete();
+}
+
+function showComplete(){
+  const sv=$survey(); sv.classList.remove("active"); sv.style.display="none";
+  $pb().classList.add("hidden"); $nav().style.display="none";
+  const cp=$complete(); cp.style.display="flex"; cp.classList.add("active");
+  const c=SURVEY_CONFIG.complete,pr=state.prize;
+  const likertIds=SCREENS.filter(s=>s.type==="likert").map(s=>s.id);
+  const scores=likertIds.map(id=>parseInt(state.answers[id])).filter(v=>!isNaN(v));
+  const avg=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(2):"—";
+  const overall=state.answers["Q4"]||"—";
+  const cnt=Object.keys(state.answers).length;
+  document.getElementById("complete-title").textContent=c.title;
+  document.getElementById("complete-body").innerHTML=c.body.replace(/\n/g,"<br>");
+  document.getElementById("complete-foot").textContent=c.foot;
+  document.getElementById("result-overall").textContent=overall;
+  document.getElementById("result-avg").textContent=avg;
+  document.getElementById("result-count").textContent=cnt+"문항";
+  const pr2=document.getElementById("prize-result");
+  if(pr.agreedSet&&pr.agreed&&pr.phone)
+    pr2.innerHTML=`<div class="prize-result-ok">경품 추첨에 등록되었습니다.<br><span style="font-size:11px">연락처: ${esc(pr.phone)}</span></div>`;
+  else if(pr.agreedSet&&!pr.agreed)
+    pr2.innerHTML=`<div class="prize-result-no">개인정보 미동의로 경품 대상에서 제외됩니다</div>`;
+  else pr2.innerHTML="";
+  document.getElementById("btn-restart").textContent=c.restart;
+}
+
+function renderIntro(){
+  const c=SURVEY_CONFIG.intro;
+  document.getElementById("intro-wordmark").textContent=c.wordmark;
+  document.getElementById("intro-title").textContent=c.title;
+  document.getElementById("intro-body").textContent=c.body;
+  document.getElementById("intro-sub").textContent=c.sub;
+  const metaWrap=document.getElementById("intro-meta");
+  metaWrap.innerHTML=c.meta.map(m=>
+    `<div class="meta-item"><span class="meta-label">${esc(m.label)}</span><span class="meta-value">${esc(m.value)}</span></div>`
+  ).join("");
+  document.getElementById("btn-start").textContent=c.startBtn;
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  renderIntro();
+  document.getElementById("btn-start").addEventListener("click",()=>{
+    $intro().classList.remove("active");$intro().style.display="none";
+    $pb().classList.remove("hidden");$nav().style.display="block";
+    const sv=$survey();sv.style.display="flex";sv.classList.add("active");
+    state.idx=0;renderQ();
+  });
+  document.getElementById("btn-prev").addEventListener("click",goPrev);
+  document.getElementById("btn-next").addEventListener("click",goNext);
+  document.getElementById("btn-restart").addEventListener("click",()=>{
+    state.idx=0;state.answers={};state.demo={};
+    state.prize={agreedSet:false,agreed:false,phone:""};
+    $complete().classList.remove("active");$complete().style.display="none";
+    $pb().classList.add("hidden");$nav().style.display="none";
+    const intro=$intro();intro.style.display="flex";intro.classList.add("active");
+  });
+  document.addEventListener("keydown",e=>{
+    if($survey().style.display==="none")return;
+    const sc=SCREENS[state.idx];
+    if(sc.type==="textarea"&&e.key==="Enter"&&!e.shiftKey)return;
+    if(e.key==="ArrowRight"||e.key==="Enter")goNext();
+    if(e.key==="ArrowLeft"&&state.idx>0)goPrev();
+  });
+});
+</script>
+
+<!-- 진행률 바 -->
+<div id="progress-bar" class="hidden">
+  <div class="pb-top">
+    <div class="pb-group">
+      <span class="pb-section-name" id="pb-section-name"></span>
+      <span class="pb-tag" id="pb-tag" style="display:none"></span>
+    </div>
+    <span class="pb-counter" id="pb-counter"></span>
+  </div>
+  <div class="pb-segments" id="pb-segments"></div>
+</div>
+
+<!-- 인트로 -->
+<div id="screen-intro" class="screen active" style="display:flex">
+  <div class="intro-card">
+    <span class="intro-wordmark" id="intro-wordmark"></span>
+    <h1 class="intro-title" id="intro-title" style="white-space:pre-line"></h1>
+    <div class="intro-divider"></div>
+    <p class="intro-body" id="intro-body" style="white-space:pre-line"></p>
+    <p class="intro-sub"  id="intro-sub"  style="white-space:pre-line"></p>
+    <div class="intro-meta" id="intro-meta"></div>
+    <button class="btn-start" id="btn-start"></button>
+  </div>
+</div>
+
+<!-- 설문 -->
+<div id="screen-survey" class="screen" style="display:none">
+  <div class="question-wrap" id="question-wrap"></div>
+  <div class="error-msg" id="error-msg">답변을 선택해 주세요</div>
+  <p class="kb-hint" id="kb-hint" style="display:none"></p>
+</div>
+
+<!-- 완료 -->
+<div id="screen-complete" class="screen" style="display:none">
+  <div class="complete-card">
+    <div class="complete-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    </div>
+    <h2 class="complete-title" id="complete-title"></h2>
+    <div class="complete-divider"></div>
+    <p class="complete-body" id="complete-body"></p>
+    <div class="result-grid">
+      <div class="result-item">
+        <div class="result-value" id="result-overall">—</div>
+        <div class="result-label">종합 만족도</div>
+      </div>
+      <div class="result-item">
+        <div class="result-value" id="result-avg">—</div>
+        <div class="result-label">평균 평점</div>
+      </div>
+      <div class="result-item">
+        <div class="result-value" id="result-count">—</div>
+        <div class="result-label">응답 완료</div>
+      </div>
+    </div>
+    <div id="prize-result"></div>
+    <p class="complete-foot" id="complete-foot"></p>
+    <button class="btn-restart" id="btn-restart"></button>
+  </div>
+</div>
+
+<!-- 하단 네비게이션 -->
+<nav id="nav-bar">
+  <div class="nav-inner">
+    <button class="btn-prev" id="btn-prev">←</button>
+    <button class="btn-next" id="btn-next">다음</button>
+    <div class="btn-placeholder" id="btn-placeholder" style="display:none">선택해 주세요</div>
+  </div>
+</nav>
+
+</body>
+</html>

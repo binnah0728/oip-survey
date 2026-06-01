@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OIP 관리자 대시보드 — 사조푸디스트</title>
+<meta name="theme-color" content="#141B4D">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="config.js"></script>
+<style>
+/* ── 변수 ─────────────────────────────────────── */
+:root {
+  --navy:        #141B4D;
+  --navy-mid:    #1E2D6B;
+  --navy-bright: #2D4BA8;
+  --navy-light:  #E8EDF8;
+  --navy-pale:   #F4F6FC;
+  --accent:      #3A5FBF;
+  --accent-soft: #C8D4F0;
+
+  --bg:          #F0F3FA;
+  --card:        #FFFFFF;
+  --border:      #D5DCF0;
+  --border-mid:  #B8C4E0;
+
+  --text:        #0D1229;
+  --sub:         #3D4A6B;
+  --muted:       #7F8DB5;
+  --placeholder: #A8B2D0;
+
+  --success:     #1A6B47;
+  --success-bg:  #E6F4EE;
+  --success-bd:  #A7D4BB;
+  --warn:        #92600A;
+  --warn-bg:     #FEF3C7;
+  --error:       #991B1B;
+  --error-bg:    #FEE2E2;
+
+  --sidebar-w:   220px;
+  --topbar-h:    56px;
+
+  --shadow-xs: 0 1px 3px rgba(20,27,77,.07);
+  --shadow-sm: 0 2px 10px rgba(20,27,77,.09);
+  --shadow-md: 0 6px 24px rgba(20,27,77,.13);
+
+  --font: 'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  --radius: 10px;
+  --radius-lg: 16px;
+}
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+html { font-size:14px; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family:var(--font); cursor:pointer; border:none; background:none; }
+input, select, textarea { font-family:var(--font); }
+a { text-decoration:none; color:inherit; }
+
+/* ════════════════════════════════════════════
+   로그인 화면
+════════════════════════════════════════════ */
+#login-screen {
+  position:fixed; inset:0; z-index:999;
+  background: var(--navy);
+  display:flex; align-items:center; justify-content:center;
+  padding:24px;
+}
+#login-screen::before {
+  content:'';
+  position:absolute; top:-120px; right:-100px;
+  width:450px; height:450px; border-radius:50%;
+  background:rgba(255,255,255,.03);
+  pointer-events:none;
+}
+.login-box {
+  width:100%; max-width:380px;
+  background:#fff; border-radius:var(--radius-lg);
+  padding:44px 40px; box-shadow:var(--shadow-md);
+  position:relative; z-index:1;
+}
+.login-wordmark {
+  font-size:10px; font-weight:600; letter-spacing:.18em;
+  text-transform:uppercase; color:var(--muted);
+  margin-bottom:28px; display:block;
+}
+.login-title {
+  font-size:22px; font-weight:700; color:var(--navy);
+  margin-bottom:6px; line-height:1.3;
+}
+.login-desc {
+  font-size:13px; color:var(--muted); margin-bottom:28px; line-height:1.6;
+}
+.login-label {
+  font-size:11px; font-weight:700; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--muted); margin-bottom:6px; display:block;
+}
+.login-input {
+  width:100%; padding:12px 14px;
+  border:1.5px solid var(--border); border-radius:var(--radius);
+  font-size:15px; color:var(--text); outline:none;
+  transition:border-color .15s;
+  margin-bottom:12px;
+}
+.login-input:focus { border-color:var(--navy-bright); }
+.login-error {
+  font-size:12px; color:var(--error); margin-bottom:12px;
+  display:none; padding:8px 12px; background:var(--error-bg);
+  border-radius:6px;
+}
+.login-error.show { display:block; }
+.btn-login {
+  width:100%; padding:13px;
+  background:var(--navy); color:#fff;
+  border-radius:var(--radius); font-size:14px; font-weight:700;
+  letter-spacing:.04em; transition:background .15s;
+  margin-top:4px;
+}
+.btn-login:hover { background:var(--navy-mid); }
+
+/* ════════════════════════════════════════════
+   레이아웃
+════════════════════════════════════════════ */
+#app { display:flex; min-height:100vh; }
+
+/* ── 사이드바 ─────────────────────────── */
+#sidebar {
+  width:var(--sidebar-w); flex-shrink:0;
+  background:var(--navy);
+  display:flex; flex-direction:column;
+  position:fixed; top:0; left:0; bottom:0;
+  z-index:100; overflow-y:auto;
+}
+.sb-logo {
+  padding:20px 20px 16px;
+  border-bottom:1px solid rgba(255,255,255,.1);
+}
+.sb-logo-label {
+  font-size:9px; font-weight:600; letter-spacing:.16em;
+  text-transform:uppercase; color:rgba(255,255,255,.4);
+  display:block; margin-bottom:5px;
+}
+.sb-logo-title {
+  font-size:15px; font-weight:700; color:#fff; line-height:1.3;
+}
+.sb-nav { padding:14px 10px; flex:1; }
+.sb-group-label {
+  font-size:9px; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; color:rgba(255,255,255,.35);
+  padding:10px 10px 5px; display:block;
+}
+.sb-link {
+  display:flex; align-items:center; gap:10px;
+  padding:9px 10px; border-radius:8px;
+  font-size:13px; font-weight:500;
+  color:rgba(255,255,255,.65);
+  transition:all .15s; margin-bottom:2px;
+  cursor:pointer;
+}
+.sb-link:hover { background:rgba(255,255,255,.1); color:#fff; }
+.sb-link.active { background:rgba(255,255,255,.15); color:#fff; font-weight:700; }
+.sb-link svg { width:16px; height:16px; flex-shrink:0; opacity:.7; }
+.sb-link.active svg { opacity:1; }
+.sb-footer {
+  padding:14px 10px;
+  border-top:1px solid rgba(255,255,255,.1);
+}
+
+/* ── 상단바 ───────────────────────────── */
+#topbar {
+  position:fixed; top:0;
+  left:var(--sidebar-w); right:0;
+  height:var(--topbar-h); z-index:90;
+  background:#fff; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 28px;
+  box-shadow:var(--shadow-xs);
+}
+.tb-title {
+  font-size:15px; font-weight:700; color:var(--navy);
+}
+.tb-right { display:flex; align-items:center; gap:10px; }
+.tb-badge {
+  display:flex; align-items:center; gap:6px;
+  padding:5px 12px; border-radius:99px;
+  background:var(--success-bg); border:1px solid var(--success-bd);
+  font-size:11px; font-weight:700; color:var(--success);
+}
+.tb-dot {
+  width:7px; height:7px; border-radius:50%;
+  background:var(--success);
+  animation:pulse 2s ease infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.btn-tb {
+  padding:7px 14px; border-radius:8px;
+  font-size:12px; font-weight:600; letter-spacing:.03em;
+  transition:all .15s;
+}
+.btn-tb.primary {
+  background:var(--navy); color:#fff;
+  box-shadow:var(--shadow-xs);
+}
+.btn-tb.primary:hover { background:var(--navy-mid); }
+.btn-tb.ghost {
+  border:1.5px solid var(--border); color:var(--sub);
+  background:#fff;
+}
+.btn-tb.ghost:hover { border-color:var(--navy); color:var(--navy); }
+
+/* ── 메인 콘텐츠 ──────────────────────── */
+#main {
+  margin-left:var(--sidebar-w);
+  padding-top:var(--topbar-h);
+  flex:1; min-width:0;
+}
+.main-inner { padding:28px 28px 48px; }
+
+/* ── 섹션 패널 ────────────────────────── */
+.panel { display:none; }
+.panel.active { display:block; animation:fadeUp .3s ease both; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── 페이지 헤더 ──────────────────────── */
+.page-header {
+  display:flex; align-items:flex-start; justify-content:space-between;
+  margin-bottom:24px; flex-wrap:wrap; gap:12px;
+}
+.page-title { font-size:20px; font-weight:700; color:var(--navy); margin-bottom:3px; }
+.page-desc  { font-size:12px; color:var(--muted); }
+.page-actions { display:flex; gap:8px; align-items:center; }
+
+/* ── KPI 카드 ─────────────────────────── */
+.kpi-grid {
+  display:grid; grid-template-columns:repeat(4,1fr);
+  gap:14px; margin-bottom:24px;
+}
+.kpi-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius-lg); padding:20px 22px;
+  box-shadow:var(--shadow-xs); position:relative;
+  overflow:hidden;
+}
+.kpi-card::after {
+  content:''; position:absolute;
+  top:0; left:0; right:0; height:3px;
+}
+.kpi-card.c1::after { background:var(--navy); }
+.kpi-card.c2::after { background:#1A6B47; }
+.kpi-card.c3::after { background:#92600A; }
+.kpi-card.c4::after { background:#1D4ED8; }
+.kpi-label {
+  font-size:11px; font-weight:700; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--muted); margin-bottom:8px;
+}
+.kpi-value {
+  font-size:32px; font-weight:700; color:var(--navy);
+  line-height:1; margin-bottom:5px; font-variant-numeric:tabular-nums;
+}
+.kpi-sub { font-size:11px; color:var(--muted); }
+
+/* ── 카드 ─────────────────────────────── */
+.card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius-lg); box-shadow:var(--shadow-xs);
+  margin-bottom:16px;
+}
+.card-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:18px 22px 14px; border-bottom:1px solid var(--border);
+}
+.card-title { font-size:14px; font-weight:700; color:var(--navy); }
+.card-desc  { font-size:11px; color:var(--muted); margin-top:2px; }
+.card-body  { padding:20px 22px; }
+
+/* ── 그리드 ───────────────────────────── */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+
+/* ── 차트 래퍼 ────────────────────────── */
+.chart-wrap { position:relative; height:240px; }
+.chart-wrap.tall { height:300px; }
+
+/* ── 필터 바 ──────────────────────────── */
+.filter-bar {
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:14px 20px;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); margin-bottom:20px;
+  box-shadow:var(--shadow-xs);
+}
+.filter-label {
+  font-size:11px; font-weight:700; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--muted); flex-shrink:0;
+}
+.filter-sep { width:1px; height:20px; background:var(--border); }
+.filter-select {
+  padding:6px 28px 6px 10px; border:1.5px solid var(--border);
+  border-radius:7px; font-size:12px; color:var(--text);
+  background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%237F8DB5' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E") no-repeat right 8px center;
+  appearance:none; cursor:pointer; min-width:110px;
+  transition:border-color .15s;
+}
+.filter-select:focus { outline:none; border-color:var(--navy-bright); }
+.btn-filter-reset {
+  padding:6px 12px; border:1.5px solid var(--border);
+  border-radius:7px; font-size:12px; color:var(--muted); font-weight:500;
+  transition:all .15s;
+}
+.btn-filter-reset:hover { border-color:var(--navy); color:var(--navy); }
+
+/* ── 테이블 ───────────────────────────── */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+thead th {
+  padding:9px 12px; text-align:left;
+  font-size:10px; font-weight:700; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--muted);
+  background:var(--bg); border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+tbody td {
+  padding:10px 12px; border-bottom:1px solid var(--border);
+  color:var(--sub); vertical-align:middle;
+}
+tbody tr:last-child td { border-bottom:none; }
+tbody tr:hover td { background:var(--navy-pale); }
+.td-val { font-weight:700; color:var(--navy); }
+
+/* ── 순위 바 ──────────────────────────── */
+.rank-item {
+  display:flex; align-items:center; gap:12px;
+  padding:10px 0; border-bottom:1px solid var(--border);
+}
+.rank-item:last-child { border-bottom:none; }
+.rank-num {
+  width:24px; height:24px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:700; color:#fff;
+}
+.rank-num.best { background:var(--navy); }
+.rank-num.worst { background:#7F8DB5; }
+.rank-text { flex:1; min-width:0; }
+.rank-q { font-size:12px; color:var(--text); font-weight:500;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rank-bar-wrap { width:100px; height:5px; background:var(--border); border-radius:3px; margin-top:4px; }
+.rank-bar { height:100%; border-radius:3px; transition:width .6s ease; }
+.rank-bar.best  { background:var(--navy); }
+.rank-bar.worst { background:#B8C4E0; }
+.rank-score { font-size:13px; font-weight:700; color:var(--navy); width:32px; text-align:right; flex-shrink:0; }
+
+/* ── 주관식 카드 ──────────────────────── */
+.text-card {
+  padding:12px 16px; margin-bottom:8px;
+  background:var(--navy-pale); border:1px solid var(--border);
+  border-left:3px solid var(--navy); border-radius:8px;
+  font-size:13px; color:var(--sub); line-height:1.7;
+}
+.text-card:last-child { margin-bottom:0; }
+
+/* ── 원형 게이지 (NPS) ────────────────── */
+.nps-row { display:flex; align-items:center; gap:20px; }
+.nps-gauge-wrap { flex-shrink:0; position:relative; width:100px; height:100px; }
+.nps-center {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+}
+.nps-score { font-size:22px; font-weight:700; color:var(--navy); line-height:1; }
+.nps-label { font-size:9px; font-weight:700; letter-spacing:.08em; color:var(--muted); margin-top:2px; }
+.nps-legend { flex:1; }
+.nps-legend-item {
+  display:flex; align-items:center; gap:8px;
+  font-size:12px; color:var(--sub); margin-bottom:7px;
+}
+.nps-legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.nps-legend-pct { margin-left:auto; font-weight:700; color:var(--navy); }
+
+/* ── 배지 ─────────────────────────────── */
+.badge {
+  display:inline-flex; align-items:center;
+  padding:3px 8px; border-radius:4px;
+  font-size:10px; font-weight:700; letter-spacing:.05em;
+}
+.badge-navy  { background:var(--navy-light); color:var(--navy); }
+.badge-green { background:var(--success-bg); color:var(--success); }
+.badge-warn  { background:var(--warn-bg);    color:var(--warn);    }
+
+/* ── 로딩 스피너 ──────────────────────── */
+.spinner {
+  display:inline-block; width:18px; height:18px;
+  border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff; border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+.spinner.dark {
+  border-color:rgba(20,27,77,.15);
+  border-top-color:var(--navy);
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+.loading-center {
+  display:flex; align-items:center; justify-content:center;
+  padding:60px; gap:12px; color:var(--muted); font-size:13px;
+}
+
+/* ── 반응형 ───────────────────────────── */
+@media (max-width:1100px) { .kpi-grid { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:900px)  { .grid-2,.grid-3 { grid-template-columns:1fr; } }
+@media (max-width:768px)  {
+  #sidebar { transform:translateX(-100%); }
+  #main { margin-left:0; }
+  #topbar { left:0; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ 로그인 화면 ══════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <span class="login-wordmark">Organizational Insight Platform</span>
+    <h1 class="login-title">관리자 로그인</h1>
+    <p class="login-desc">사조푸디스트 OIP 관리자 전용 페이지입니다</p>
+    <label class="login-label">비밀번호</label>
+    <input class="login-input" type="password" id="login-pw"
+      placeholder="비밀번호를 입력하세요" autocomplete="current-password">
+    <div class="login-error" id="login-error">비밀번호가 올바르지 않습니다</div>
+    <button class="btn-login" id="btn-login">로그인</button>
+    <p style="font-size:11px;color:var(--muted);margin-top:16px;text-align:center;">
+      개발 모드 기본값: admin1234
+    </p>
+  </div>
+</div>
+
+<!-- ══ 대시보드 ════════════════════════════════════════════════ -->
+<div id="app" style="display:none">
+
+  <!-- 사이드바 -->
+  <aside id="sidebar">
+    <div class="sb-logo">
+      <span class="sb-logo-label">Foodist · OIP v2.0</span>
+      <div class="sb-logo-title">직원식당<br>고객만족도 조사</div>
+    </div>
+    <nav class="sb-nav">
+      <span class="sb-group-label">분석</span>
+      <div class="sb-link active" data-panel="panel-overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        개요 대시보드
+      </div>
+      <div class="sb-link" data-panel="panel-questions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        문항별 분석
+      </div>
+      <div class="sb-link" data-panel="panel-segment">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        응답자 분포
+      </div>
+      <div class="sb-link" data-panel="panel-text">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        주관식 의견
+      </div>
+      <span class="sb-group-label" style="margin-top:8px">관리</span>
+      <div class="sb-link" data-panel="panel-raw">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        원본 데이터
+      </div>
+      <a href="cafeteria-survey-sajjo.html" target="_blank" class="sb-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        설문 페이지
+      </a>
+    </nav>
+    <div class="sb-footer">
+      <div class="sb-link" id="btn-logout" style="margin-bottom:0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        로그아웃
+      </div>
+    </div>
+  </aside>
+
+  <!-- 상단바 -->
+  <header id="topbar">
+    <span class="tb-title" id="tb-title">개요 대시보드</span>
+    <div class="tb-right">
+      <div class="tb-badge">
+        <div class="tb-dot"></div>
+        <span id="tb-count">— 건</span>
+      </div>
+      <button class="btn-tb ghost" id="btn-refresh">새로고침</button>
+      <button class="btn-tb primary" id="btn-excel">Excel 다운로드</button>
+    </div>
+  </header>
+
+  <!-- 메인 -->
+  <main id="main">
+    <div class="main-inner">
+
+      <!-- 필터 바 (공통) -->
+      <div class="filter-bar">
+        <span class="filter-label">필터</span>
+        <div class="filter-sep"></div>
+        <select class="filter-select" id="f-gender">
+          <option value="">전체 성별</option>
+          <option>남성</option><option>여성</option>
+        </select>
+        <select class="filter-select" id="f-age">
+          <option value="">전체 연령</option>
+          <option>20대</option><option>30대</option><option>40대</option><option>50대 이상</option>
+        </select>
+        <select class="filter-select" id="f-dept">
+          <option value="">전체 소속</option>
+        </select>
+        <select class="filter-select" id="f-period">
+          <option value="">전체 기간</option>
+          <option value="7">최근 7일</option>
+          <option value="30">최근 30일</option>
+          <option value="90">최근 90일</option>
+        </select>
+        <button class="btn-filter-reset" id="btn-reset">초기화</button>
+        <span style="font-size:11px;color:var(--muted);margin-left:auto" id="filter-count"></span>
+      </div>
+
+      <!-- ── 패널 1: 개요 ───────────────────────── -->
+      <div class="panel active" id="panel-overview">
+        <div class="page-header">
+          <div>
+            <div class="page-title">개요 대시보드</div>
+            <div class="page-desc">전체 응답 현황 및 핵심 지표 요약</div>
+          </div>
+        </div>
+
+        <!-- KPI -->
+        <div class="kpi-grid">
+          <div class="kpi-card c1">
+            <div class="kpi-label">총 응답 수</div>
+            <div class="kpi-value" id="kpi-total">—</div>
+            <div class="kpi-sub">누적 응답</div>
+          </div>
+          <div class="kpi-card c2">
+            <div class="kpi-label">전체 평균</div>
+            <div class="kpi-value" id="kpi-avg">—</div>
+            <div class="kpi-sub">/ 5.00점</div>
+          </div>
+          <div class="kpi-card c3">
+            <div class="kpi-label">종합 만족도</div>
+            <div class="kpi-value" id="kpi-overall">—</div>
+            <div class="kpi-sub">최다 선택 답변</div>
+          </div>
+          <div class="kpi-card c4">
+            <div class="kpi-label">경품 참여율</div>
+            <div class="kpi-value" id="kpi-prize">—</div>
+            <div class="kpi-sub">동의 응답자 비율</div>
+          </div>
+        </div>
+
+        <!-- 차트 행 1 -->
+        <div class="grid-2" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">영역별 평균 점수</div>
+                <div class="card-desc">음식·서비스·환경 3개 영역 비교</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrap"><canvas id="chart-area"></canvas></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">종합 만족도 분포</div>
+                <div class="card-desc">Q4 응답 비율</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrap"><canvas id="chart-sat"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 차트 행 2 -->
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">일별 응답 추이</div>
+                <div class="card-desc">최근 30일 응답 수 변화</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrap"><canvas id="chart-trend"></canvas></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">개선 필요 영역 (Q7)</div>
+                <div class="card-desc">응답자가 선택한 개선 우선순위</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrap"><canvas id="chart-improve"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 패널 2: 문항별 분석 ───────────────── -->
+      <div class="panel" id="panel-questions">
+        <div class="page-header">
+          <div>
+            <div class="page-title">문항별 분석</div>
+            <div class="page-desc">18개 리커트 문항 평균 점수 및 순위</div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">레이더 차트 — 전체 문항</div>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrap tall"><canvas id="chart-radar"></canvas></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">문항별 점수 바 차트</div>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrap tall"><canvas id="chart-bar-q"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">상위 5문항</div>
+                <div class="card-desc">가장 만족도 높은 항목</div>
+              </div>
+            </div>
+            <div class="card-body" id="rank-best"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">하위 5문항</div>
+                <div class="card-desc">개선이 필요한 항목</div>
+              </div>
+            </div>
+            <div class="card-body" id="rank-worst"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 패널 3: 응답자 분포 ───────────────── -->
+      <div class="panel" id="panel-segment">
+        <div class="page-header">
+          <div>
+            <div class="page-title">응답자 분포</div>
+            <div class="page-desc">성별·연령대·소속별 응답 현황</div>
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-header"><div class="card-title">성별</div></div>
+            <div class="card-body"><div class="chart-wrap"><canvas id="chart-gender"></canvas></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">연령대</div></div>
+            <div class="card-body"><div class="chart-wrap"><canvas id="chart-age"></canvas></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">소속</div></div>
+            <div class="card-body"><div class="chart-wrap"><canvas id="chart-dept"></canvas></div></div>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-top:16px">
+          <div class="card">
+            <div class="card-header"><div class="card-title">이용 빈도 분포 (Q1)</div></div>
+            <div class="card-body"><div class="chart-wrap"><canvas id="chart-freq"></canvas></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">주 이용 끼니 (Q2)</div></div>
+            <div class="card-body"><div class="chart-wrap"><canvas id="chart-meal"></canvas></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 패널 4: 주관식 ────────────────────── -->
+      <div class="panel" id="panel-text">
+        <div class="page-header">
+          <div>
+            <div class="page-title">주관식 의견</div>
+            <div class="page-desc">자유 서술 응답 전체 목록</div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">테이크아웃 관련 의견 (Q10)</div>
+                <div class="card-desc" id="text-q10-count"></div>
+              </div>
+            </div>
+            <div class="card-body" id="text-q10" style="max-height:420px;overflow-y:auto"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">전반 개선 의견 (Q11)</div>
+                <div class="card-desc" id="text-q11-count"></div>
+              </div>
+            </div>
+            <div class="card-body" id="text-q11" style="max-height:420px;overflow-y:auto"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 패널 5: 원본 데이터 ───────────────── -->
+      <div class="panel" id="panel-raw">
+        <div class="page-header">
+          <div>
+            <div class="page-title">원본 데이터</div>
+            <div class="page-desc">전체 응답 로우 데이터 테이블</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0">
+            <div class="table-wrap">
+              <table id="raw-table">
+                <thead id="raw-thead"></thead>
+                <tbody id="raw-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /main-inner -->
+  </main>
+</div><!-- /#app -->
+
+<!-- ══ 스크립트 ════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ── 문항 정의 ─────────────────────────────────────────────────────
+const LIKERT_KEYS = [
+  {id:'Q3A', label:'음식 간'},      {id:'Q3B', label:'음식 양'},
+  {id:'Q3C', label:'음식 온도'},    {id:'Q3D', label:'영양 균형'},
+  {id:'Q3E', label:'음식 조화'},    {id:'Q3F', label:'음식 위생'},
+  {id:'Q3G', label:'메뉴 반복주기'},{id:'Q3H', label:'품질 일관성'},
+  {id:'Q3I', label:'특식 주기'},    {id:'Q3J', label:'인적 서비스'},
+  {id:'Q3K', label:'복장/위생'},    {id:'Q3L', label:'배식 원활성'},
+  {id:'Q3M', label:'식사 대기'},    {id:'Q3N', label:'반납 대기'},
+  {id:'Q3O', label:'메뉴 정보'},    {id:'Q3P', label:'서비스 대비 가격'},
+  {id:'Q3Q', label:'식기 청결'},    {id:'Q3R', label:'시설 청결'},
+];
+const AREA_FOOD = ['Q3A','Q3B','Q3C','Q3D','Q3E','Q3F','Q3G','Q3H','Q3I'];
+const AREA_SVC  = ['Q3J','Q3K','Q3L','Q3M','Q3N','Q3O','Q3P'];
+const AREA_ENV  = ['Q3Q','Q3R'];
+
+// ── 팔레트 ────────────────────────────────────────────────────────
+const PALETTE = ['#141B4D','#1E2D6B','#2D4BA8','#3A5FBF','#5B7BD0','#8EA8E8','#B8CAF0','#D5E0F8'];
+const NAVY    = '#141B4D';
+const ACCENT  = '#3A5FBF';
+
+// ── 상태 ──────────────────────────────────────────────────────────
+const S = {
+  raw:      [],   // 전체 원본
+  filtered: [],   // 필터 적용
+  charts:   {},   // Chart.js 인스턴스
+};
+
+// ── 차트 기본 옵션 ────────────────────────────────────────────────
+const BASE_OPTS = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: {
+    legend: { position:'bottom', labels:{ padding:14, font:{size:11, family:'Pretendard'}, boxWidth:10 } },
+    tooltip: { padding:10, cornerRadius:8, titleFont:{family:'Pretendard',weight:'700'},
+               bodyFont:{family:'Pretendard'} },
+  },
+};
+
+// ── 유틸 ──────────────────────────────────────────────────────────
+const $ = (id) => document.getElementById(id);
+const mean = (arr) => {
+  const n = arr.filter(v=>typeof v==='number'&&!isNaN(v));
+  return n.length ? n.reduce((a,b)=>a+b,0)/n.length : 0;
+};
+const dist = (data, field) => {
+  const map = {};
+  data.forEach(r => { const v=r[field]||'미응답'; map[v]=(map[v]||0)+1; });
+  return map;
+};
+const destroyChart = (key) => {
+  if (S.charts[key]) { S.charts[key].destroy(); delete S.charts[key]; }
+};
+
+// ── 목업 데이터 생성 ──────────────────────────────────────────────
+function makeMockData(n=80) {
+  const genders = ['남성','여성'];
+  const ages    = ['20대','30대','40대','50대 이상'];
+  const depts   = ['AAA팀','BBB팀','CCC팀','외부인'];
+  const q4opts  = ['매우 만족','만족','보통','불만족','매우 불만족'];
+  const q1opts  = ['5회 이상','4회','3회','2회','1회','거의 이용하지 않음'];
+  const q2opts  = ['아침식사','점심식사','저녁식사','야식'];
+  const q5aOpts = ['질다','적당하다','되다'];
+  const q5bOpts = ['많이 익음','적당하다','덜 익음'];
+  const q6opts  = ['음식의 간','음식의 양','음식의 온도','영양균형','음식 조화','음식 위생',
+                   '메뉴 반복 주기','음식 품질 일관성','특식 제공 주기','인적 서비스',
+                   '복장/위생','배식 원활성','식사 대기시간','반납 대기시간','메뉴정보',
+                   '서비스 대비 가격','식기류 청결','내부 시설 청결'];
+  const q7opts  = ['맛 (맛있는 음식)','메뉴 (다양성)','위생 (식재료·청결)','서비스 (직원 응대)','이용 편의성 (대기시간)','개선 필요 없음'];
+  const q8opts  = ['밥','탕/국/찌개','구이/전/튀김','볶음/찜/조림','무침/샐러드','면류','김치','후식','개선 필요 없음'];
+  const q9opts  = ['음식의 간','음식의 온도','음식의 양','음식의 다양성','기타'];
+  const q10txts = ['테이크아웃 메뉴가 더 다양했으면 합니다','샌드위치 종류를 늘려주세요','가격이 조금 저렴했으면 합니다','도시락 옵션이 있으면 좋겠습니다',''];
+  const q11txts = ['전체적으로 만족합니다','메뉴 다양성이 개선되면 좋겠습니다','대기시간이 길어 불편합니다','음식 온도 관리를 신경 써주세요','직원분들이 친절합니다',''];
+
+  const now = Date.now();
+  return Array.from({length:n}, (_,i) => {
+    const base = 3 + (Math.random()-0.4)*1.5;
+    const row  = {
+      응답일시:  new Date(now - Math.random()*40*86400000).toISOString(),
+      세션ID:   'mock-'+i,
+      성별:     genders[Math.floor(Math.random()*2)],
+      연령대:   ages[Math.floor(Math.random()*4)],
+      소속:     depts[Math.floor(Math.random()*4)],
+      Q1: q1opts[Math.floor(Math.random()*q1opts.length)],
+      Q2: q2opts[Math.floor(Math.random()*q2opts.length)],
+      Q4: q4opts[Math.floor(Math.random()*q4opts.length)],
+      Q5A: q5aOpts[Math.floor(Math.random()*3)],
+      Q5B: q5bOpts[Math.floor(Math.random()*3)],
+      Q6: q6opts[Math.floor(Math.random()*q6opts.length)],
+      Q7: q7opts[Math.floor(Math.random()*q7opts.length)],
+      Q8: q8opts[Math.floor(Math.random()*q8opts.length)],
+      Q9: q9opts[Math.floor(Math.random()*q9opts.length)],
+      Q10: Math.random()>0.5 ? q10txts[Math.floor(Math.random()*5)] : '',
+      Q11: Math.random()>0.45 ? q11txts[Math.floor(Math.random()*6)] : '',
+      경품동의: Math.random()>0.35 ? '동의' : '미동의',
+    };
+    LIKERT_KEYS.forEach(({id}) => {
+      row[id] = Math.min(5, Math.max(1, Math.round(base + (Math.random()-0.5)*1.8)));
+    });
+    return row;
+  });
+}
+
+// ── 필터 적용 ─────────────────────────────────────────────────────
+function applyFilters() {
+  const gender = $('f-gender').value;
+  const age    = $('f-age').value;
+  const dept   = $('f-dept').value;
+  const period = $('f-period').value;
+
+  let d = [...S.raw];
+  if (gender) d = d.filter(r=>r['성별']===gender);
+  if (age)    d = d.filter(r=>r['연령대']===age);
+  if (dept)   d = d.filter(r=>r['소속']===dept);
+  if (period) {
+    const cut = Date.now() - parseInt(period)*86400000;
+    d = d.filter(r=>new Date(r['응답일시']).getTime()>=cut);
+  }
+  S.filtered = d;
+  $('filter-count').textContent = d.length !== S.raw.length
+    ? `필터 적용 중 · ${d.length}건` : '';
+  refreshAll();
+}
+
+// ── 소속 필터 옵션 채우기 ─────────────────────────────────────────
+function populateDeptFilter() {
+  const depts = [...new Set(S.raw.map(r=>r['소속']).filter(Boolean))];
+  const sel   = $('f-dept');
+  sel.innerHTML = '<option value="">전체 소속</option>';
+  depts.forEach(d => { const o=document.createElement('option'); o.value=d; o.textContent=d; sel.appendChild(o); });
+}
+
+// ── KPI 업데이트 ──────────────────────────────────────────────────
+function updateKPIs() {
+  const d = S.filtered;
+  $('kpi-total').textContent = d.length.toLocaleString();
+  $('tb-count').textContent  = d.length.toLocaleString() + '건';
+
+  // 전체 평균
+  const allScores = [];
+  LIKERT_KEYS.forEach(({id}) => {
+    d.forEach(r => { const v=parseFloat(r[id]); if(!isNaN(v)) allScores.push(v); });
+  });
+  $('kpi-avg').textContent = allScores.length ? mean(allScores).toFixed(2) : '—';
+
+  // 종합 만족도 최다
+  const q4 = dist(d,'Q4');
+  const topQ4 = Object.entries(q4).sort((a,b)=>b[1]-a[1])[0];
+  $('kpi-overall').textContent = topQ4 ? topQ4[0] : '—';
+
+  // 경품 참여율
+  const agreed = d.filter(r=>r['경품동의']==='동의').length;
+  $('kpi-prize').textContent = d.length ? Math.round(agreed/d.length*100)+'%' : '—';
+}
+
+// ── 차트 렌더 ─────────────────────────────────────────────────────
+function renderCharts() {
+  const d = S.filtered;
+
+  // 1. 영역별 평균 (가로 바)
+  destroyChart('area');
+  const areaAvgs = [
+    { label:'음식', keys:AREA_FOOD, color:PALETTE[0] },
+    { label:'서비스', keys:AREA_SVC, color:PALETTE[2] },
+    { label:'환경', keys:AREA_ENV, color:PALETTE[4] },
+  ].map(a => {
+    const vals = [];
+    a.keys.forEach(k=>d.forEach(r=>{const v=parseFloat(r[k]);if(!isNaN(v))vals.push(v);}));
+    return { label:a.label, avg:mean(vals), color:a.color };
+  });
+  S.charts.area = new Chart($('chart-area').getContext('2d'), {
+    type:'bar',
+    data:{
+      labels: areaAvgs.map(a=>a.label),
+      datasets:[{
+        data: areaAvgs.map(a=>+a.avg.toFixed(2)),
+        backgroundColor: areaAvgs.map(a=>a.color),
+        borderRadius:6, borderSkipped:false,
+      }],
+    },
+    options:{...BASE_OPTS,
+      indexAxis:'y',
+      scales:{
+        x:{min:0,max:5,grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{family:'Pretendard'}}},
+        y:{grid:{display:false},ticks:{font:{family:'Pretendard',weight:'600'}}},
+      },
+      plugins:{...BASE_OPTS.plugins, legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.raw}점 / 5.00`}}},
+    },
+  });
+
+  // 2. 종합 만족도 도넛
+  destroyChart('sat');
+  const satDist = dist(d,'Q4');
+  const satOrder = ['매우 만족','만족','보통','불만족','매우 불만족'];
+  const satVals  = satOrder.map(k=>satDist[k]||0);
+  S.charts.sat = new Chart($('chart-sat').getContext('2d'), {
+    type:'doughnut',
+    data:{
+      labels:satOrder,
+      datasets:[{data:satVals, backgroundColor:PALETTE.slice(0,5), borderWidth:0, hoverOffset:6}],
+    },
+    options:{...BASE_OPTS, cutout:'62%',
+      plugins:{...BASE_OPTS.plugins,
+        tooltip:{callbacks:{label:ctx=>{
+          const total=satVals.reduce((a,b)=>a+b,0);
+          return ` ${ctx.label}: ${ctx.raw}건 (${total?Math.round(ctx.raw/total*100):0}%)`;
+        }}},
+      },
+    },
+  });
+
+  // 3. 일별 추이
+  destroyChart('trend');
+  const dateMap = {};
+  for(let i=29;i>=0;i--){
+    const d2=new Date(Date.now()-i*86400000);
+    dateMap[d2.toISOString().slice(0,10)]=0;
+  }
+  d.forEach(r=>{const k=(r['응답일시']||'').slice(0,10);if(dateMap[k]!==undefined)dateMap[k]++;});
+  S.charts.trend = new Chart($('chart-trend').getContext('2d'),{
+    type:'line',
+    data:{
+      labels:Object.keys(dateMap).map(k=>k.slice(5)),
+      datasets:[{
+        label:'응답 수', data:Object.values(dateMap),
+        borderColor:NAVY, backgroundColor:'rgba(20,27,77,.07)',
+        fill:true, tension:.4, borderWidth:2,
+        pointRadius:2, pointHoverRadius:5, pointBackgroundColor:NAVY,
+      }],
+    },
+    options:{...BASE_OPTS,
+      scales:{
+        y:{min:0,ticks:{stepSize:1,font:{family:'Pretendard'}},grid:{color:'rgba(0,0,0,.05)'}},
+        x:{grid:{display:false},ticks:{maxTicksLimit:10,font:{family:'Pretendard'}}},
+      },
+      plugins:{...BASE_OPTS.plugins,legend:{display:false}},
+    },
+  });
+
+  // 4. 개선 필요 영역 (Q7)
+  destroyChart('improve');
+  const q7d = dist(d,'Q7');
+  const q7keys = Object.keys(q7d).sort((a,b)=>q7d[b]-q7d[a]);
+  S.charts.improve = new Chart($('chart-improve').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:q7keys.map(k=>k.length>12?k.slice(0,12)+'…':k),
+      datasets:[{data:q7keys.map(k=>q7d[k]),backgroundColor:PALETTE[2],borderRadius:6}],
+    },
+    options:{...BASE_OPTS,
+      scales:{
+        y:{ticks:{stepSize:1,font:{family:'Pretendard'}},grid:{color:'rgba(0,0,0,.05)'}},
+        x:{grid:{display:false},ticks:{font:{family:'Pretendard',size:10}}},
+      },
+      plugins:{...BASE_OPTS.plugins,legend:{display:false}},
+    },
+  });
+
+  // 5. 레이더
+  destroyChart('radar');
+  const radarAvgs = LIKERT_KEYS.map(({id,label})=>{
+    const vals=d.map(r=>parseFloat(r[id])).filter(v=>!isNaN(v));
+    return {label,avg:mean(vals)};
+  });
+  S.charts.radar = new Chart($('chart-radar').getContext('2d'),{
+    type:'radar',
+    data:{
+      labels:radarAvgs.map(x=>x.label),
+      datasets:[{
+        label:'평균 점수', data:radarAvgs.map(x=>+x.avg.toFixed(2)),
+        backgroundColor:'rgba(20,27,77,.12)', borderColor:NAVY,
+        borderWidth:2, pointBackgroundColor:NAVY, pointRadius:3,
+      }],
+    },
+    options:{...BASE_OPTS,
+      scales:{r:{min:0,max:5,ticks:{stepSize:1,backdropColor:'transparent',font:{family:'Pretendard',size:10}},
+        grid:{color:'rgba(0,0,0,.08)'},pointLabels:{font:{family:'Pretendard',size:10}}}},
+      plugins:{...BASE_OPTS.plugins,legend:{display:false}},
+    },
+  });
+
+  // 6. 문항별 바
+  destroyChart('barq');
+  S.charts.barq = new Chart($('chart-bar-q').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:LIKERT_KEYS.map(x=>x.label),
+      datasets:[{
+        data:LIKERT_KEYS.map(({id})=>{
+          const vals=d.map(r=>parseFloat(r[id])).filter(v=>!isNaN(v));
+          return +mean(vals).toFixed(2);
+        }),
+        backgroundColor:PALETTE[2], borderRadius:4,
+      }],
+    },
+    options:{...BASE_OPTS,
+      indexAxis:'y',
+      scales:{
+        x:{min:0,max:5,grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{family:'Pretendard'}}},
+        y:{grid:{display:false},ticks:{font:{family:'Pretendard',size:10}}},
+      },
+      plugins:{...BASE_OPTS.plugins,legend:{display:false}},
+    },
+  });
+
+  // 7. 성별
+  destroyChart('gender');
+  renderPie('chart-gender','성별',d);
+
+  // 8. 연령
+  destroyChart('age');
+  renderPie('chart-age','연령대',d);
+
+  // 9. 소속
+  destroyChart('dept');
+  renderPie('chart-dept','소속',d);
+
+  // 10. Q1 빈도
+  destroyChart('freq');
+  const q1d = dist(d,'Q1');
+  const q1order=['5회 이상','4회','3회','2회','1회','거의 이용하지 않음'];
+  S.charts.freq = new Chart($('chart-freq').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:q1order,
+      datasets:[{data:q1order.map(k=>q1d[k]||0),backgroundColor:PALETTE[1],borderRadius:5}],
+    },
+    options:{...BASE_OPTS,
+      scales:{
+        y:{ticks:{stepSize:1,font:{family:'Pretendard'}},grid:{color:'rgba(0,0,0,.05)'}},
+        x:{grid:{display:false},ticks:{font:{family:'Pretendard',size:10}}},
+      },
+      plugins:{...BASE_OPTS.plugins,legend:{display:false}},
+    },
+  });
+
+  // 11. Q2 끼니
+  destroyChart('meal');
+  renderPie('chart-meal','Q2',d);
+}
+
+function renderPie(canvasId, field, d) {
+  const key = canvasId.replace('chart-','');
+  destroyChart(key);
+  const dd  = dist(d, field==='Q2'?'Q2':field);
+  const labels = Object.keys(dd);
+  const vals   = Object.values(dd);
+  S.charts[key] = new Chart($(canvasId).getContext('2d'),{
+    type:'doughnut',
+    data:{labels,datasets:[{data:vals,backgroundColor:PALETTE.slice(0,labels.length),borderWidth:0,hoverOffset:5}]},
+    options:{...BASE_OPTS,cutout:'55%'},
+  });
+}
+
+// ── 순위 렌더 ─────────────────────────────────────────────────────
+function renderRanks() {
+  const d = S.filtered;
+  const ranks = LIKERT_KEYS.map(({id,label})=>{
+    const vals=d.map(r=>parseFloat(r[id])).filter(v=>!isNaN(v));
+    return {id,label,avg:mean(vals)};
+  }).sort((a,b)=>b.avg-a.avg);
+
+  const makeRankHTML = (items, type) => items.map((r,i)=>`
+    <div class="rank-item">
+      <div class="rank-num ${type}">${i+1}</div>
+      <div class="rank-text">
+        <div class="rank-q">${r.label}</div>
+        <div class="rank-bar-wrap">
+          <div class="rank-bar ${type}" style="width:${r.avg/5*100}%"></div>
+        </div>
+      </div>
+      <div class="rank-score">${r.avg.toFixed(2)}</div>
+    </div>`).join('');
+
+  $('rank-best').innerHTML  = makeRankHTML(ranks.slice(0,5), 'best');
+  $('rank-worst').innerHTML = makeRankHTML([...ranks].reverse().slice(0,5), 'worst');
+}
+
+// ── 주관식 렌더 ───────────────────────────────────────────────────
+function renderTexts() {
+  const d = S.filtered;
+  const renderList = (containerId, countId, field) => {
+    const items = d.map(r=>r[field]).filter(v=>v&&String(v).trim());
+    $(countId).textContent = `${items.length}건`;
+    $(containerId).innerHTML = items.length
+      ? items.map(t=>`<div class="text-card">${escHtml(String(t))}</div>`).join('')
+      : '<p style="color:var(--placeholder);font-size:13px;padding:8px 0">응답 없음</p>';
+  };
+  renderList('text-q10','text-q10-count','Q10');
+  renderList('text-q11','text-q11-count','Q11');
+}
+
+// ── 원본 테이블 ───────────────────────────────────────────────────
+function renderRawTable() {
+  const d = S.filtered.slice(0,200); // 최대 200행
+  if (!d.length) { $('raw-thead').innerHTML=''; $('raw-tbody').innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:32px">데이터 없음</td></tr>'; return; }
+
+  const cols = ['응답일시','성별','연령대','소속','Q4','Q3A','Q3B','Q3C','Q3J','Q3Q','Q7','경품동의'];
+  const labels = ['응답일시','성별','연령대','소속','종합만족','음식간','음식양','음식온도','인적서비스','식기청결','개선영역','경품동의'];
+
+  $('raw-thead').innerHTML = `<tr>${labels.map(l=>`<th>${l}</th>`).join('')}</tr>`;
+  $('raw-tbody').innerHTML = d.map(r=>`<tr>${cols.map(c=>`<td>${escHtml(String(r[c]||''))}</td>`).join('')}</tr>`).join('');
+}
+
+// ── 전체 새로고침 ─────────────────────────────────────────────────
+function refreshAll() {
+  updateKPIs();
+  renderCharts();
+  renderRanks();
+  renderTexts();
+  renderRawTable();
+}
+
+// ── Excel 다운로드 ────────────────────────────────────────────────
+function downloadExcel() {
+  const d  = S.filtered;
+  const wb = XLSX.utils.book_new();
+
+  // 시트 1: 원본
+  const ws1 = XLSX.utils.json_to_sheet(d);
+  XLSX.utils.book_append_sheet(wb, ws1, '원본데이터');
+
+  // 시트 2: 문항별 평균
+  const avg2 = LIKERT_KEYS.map(({id,label})=>{
+    const vals=d.map(r=>parseFloat(r[id])).filter(v=>!isNaN(v));
+    return {'문항ID':id,'문항명':label,'평균점수':+mean(vals).toFixed(2),'응답수':vals.length};
+  });
+  const ws2 = XLSX.utils.json_to_sheet(avg2);
+  XLSX.utils.book_append_sheet(wb, ws2, '문항별평균');
+
+  // 시트 3: 영역별
+  const area3 = [
+    {영역:'음식', ...Object.fromEntries(AREA_FOOD.map(k=>{const v=d.map(r=>parseFloat(r[k])).filter(v=>!isNaN(v));return[k,+mean(v).toFixed(2)];}))},
+    {영역:'서비스',...Object.fromEntries(AREA_SVC.map(k=>{const v=d.map(r=>parseFloat(r[k])).filter(v=>!isNaN(v));return[k,+mean(v).toFixed(2)];}))},
+    {영역:'환경', ...Object.fromEntries(AREA_ENV.map(k=>{const v=d.map(r=>parseFloat(r[k])).filter(v=>!isNaN(v));return[k,+mean(v).toFixed(2)];}))}
+  ];
+  const ws3 = XLSX.utils.json_to_sheet(area3);
+  XLSX.utils.book_append_sheet(wb, ws3, '영역별분석');
+
+  // 시트 4: 주관식
+  const text4 = d.filter(r=>r['Q10']||r['Q11']).map(r=>({'Q10':r['Q10']||'','Q11':r['Q11']||''}));
+  const ws4 = XLSX.utils.json_to_sheet(text4);
+  XLSX.utils.book_append_sheet(wb, ws4, '주관식의견');
+
+  const date = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `직원식당만족도_${date}.xlsx`);
+}
+
+// ── 데이터 로드 ───────────────────────────────────────────────────
+async function loadData() {
+  // 상단바 로딩 표시
+  $('btn-refresh').textContent = '로딩 중...';
+  $('btn-refresh').disabled = true;
+
+  if (OIP.USE_MOCK) {
+    await new Promise(r=>setTimeout(r,600));
+    S.raw      = makeMockData(80);
+    S.filtered = [...S.raw];
+    populateDeptFilter();
+    refreshAll();
+    $('btn-refresh').textContent = '새로고침';
+    $('btn-refresh').disabled = false;
+    return;
+  }
+
+  try {
+    const url = `${OIP.GAS_URL}?action=getData&key=${OIP.ADMIN_KEY}`;
+    const res  = await fetch(url, { cache:'no-store' });
+    const body = await res.json();
+
+    if (body.status !== 'ok') throw new Error(body.message || 'GAS error');
+
+    // GAS 데이터 필드명 정규화
+    S.raw = (body.data || []).map(r => ({
+      응답일시 : r['응답일시'] || r.respondedAt || '',
+      세션ID   : r['세션ID']   || r.sessionId   || '',
+      성별     : r['성별']     || r.gender       || '',
+      연령대   : r['연령대']   || r.age          || '',
+      소속     : r['소속']     || r.dept         || '',
+      Q4       : r['종합만족도']|| r.Q4           || '',
+      Q7       : r['개선영역'] || r.Q7           || '',
+      Q10      : r['테이크아웃의견']|| r.Q10      || '',
+      Q11      : r['전반의견'] || r.Q11          || '',
+      경품동의 : r['경품동의'] || '',
+      ...LIKERT_KEYS.reduce((acc,{id,label})=>{
+        acc[id] = parseFloat(r[label] || r[id]) || undefined;
+        return acc;
+      }, {}),
+    }));
+
+    S.filtered = [...S.raw];
+    populateDeptFilter();
+    refreshAll();
+  } catch(ex) {
+    console.error('loadData failed:', ex.message);
+    // 폴백: 목업
+    S.raw      = makeMockData(80);
+    S.filtered = [...S.raw];
+    populateDeptFilter();
+    refreshAll();
+    console.warn('Fell back to mock data');
+  } finally {
+    $('btn-refresh').textContent = '새로고침';
+    $('btn-refresh').disabled = false;
+  }
+}
+
+// ── 패널 전환 ─────────────────────────────────────────────────────
+const PANEL_TITLES = {
+  'panel-overview':  '개요 대시보드',
+  'panel-questions': '문항별 분석',
+  'panel-segment':   '응답자 분포',
+  'panel-text':      '주관식 의견',
+  'panel-raw':       '원본 데이터',
+};
+function switchPanel(id) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id)?.classList.add('active');
+  document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('active'));
+  document.querySelector(`[data-panel="${id}"]`)?.classList.add('active');
+  $('tb-title').textContent = PANEL_TITLES[id]||'';
+}
+
+// ── XSS 방어 ──────────────────────────────────────────────────────
+function escHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── 로그인 ────────────────────────────────────────────────────────
+function doLogin(pw) {
+  if (pw === OIP.ADMIN_PW) {
+    sessionStorage.setItem('oip_admin', btoa(pw+'_ok'));
+    $('login-screen').style.display = 'none';
+    $('app').style.display = 'flex';
+    loadData();
+  } else {
+    $('login-error').classList.add('show');
+    setTimeout(()=>$('login-error').classList.remove('show'), 2500);
+  }
+}
+
+// ── 초기화 ────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // 자동 로그인 (세션)
+  const stored = sessionStorage.getItem('oip_admin');
+  if (stored === btoa(OIP.ADMIN_PW+'_ok')) {
+    $('login-screen').style.display = 'none';
+    $('app').style.display = 'flex';
+    loadData();
+  }
+
+  // 로그인 이벤트
+  $('btn-login').addEventListener('click', ()=>doLogin($('login-pw').value));
+  $('login-pw').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin($('login-pw').value); });
+
+  // 사이드바 네비
+  document.querySelectorAll('.sb-link[data-panel]').forEach(el => {
+    el.addEventListener('click', ()=>switchPanel(el.dataset.panel));
+  });
+
+  // 필터
+  ['f-gender','f-age','f-dept','f-period'].forEach(id=>{
+    $(id).addEventListener('change', applyFilters);
+  });
+  $('btn-reset').addEventListener('click', ()=>{
+    ['f-gender','f-age','f-dept','f-period'].forEach(id=>$(id).value='');
+    $('filter-count').textContent='';
+    S.filtered=[...S.raw]; refreshAll();
+  });
+
+  // 버튼
+  $('btn-refresh').addEventListener('click', loadData);
+  $('btn-excel').addEventListener('click', downloadExcel);
+  $('btn-logout').addEventListener('click', ()=>{
+    sessionStorage.removeItem('oip_admin');
+    location.reload();
+  });
+});
+</script>
+</body>
+</html>
