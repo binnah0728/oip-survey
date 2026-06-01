@@ -17,7 +17,7 @@ const OIP = {
   ADMIN_KEY : 'SAJOFOODIST_OIP_2026',
 
   // ── ③ 관리자 대시보드 비밀번호 ──────────────────────────────────
-  ADMIN_PW : 'Sajofoodist@2026',
+  ADMIN_PW : 'admin1234',
 
   // ── ④ 설문 식별자 ────────────────────────────────────────────────
   SURVEY_ID : 'CAFETERIA-2026-H1',
